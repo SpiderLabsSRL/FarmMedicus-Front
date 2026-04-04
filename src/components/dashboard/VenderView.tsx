@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Minus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, Plus, Minus, Trash2, } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { searchProducts, getCashStatus, processSale, type Product, type Variant, type SaleRequest } from "@/api/SalesApi";
+import { searchProducts, getCashStatus, processSale, type Product, type SaleRequest } from "@/api/SalesApi";
 import { getUserId, getCurrentUser } from "@/api/AuthApi";
 
-interface SaleItem extends Variant {
+interface SaleItem extends Product {
   cantidad: number;
-  selectedColor?: string;
   ubicacion?: string;
 }
 
@@ -148,41 +147,40 @@ export function VenderView() {
     }
   };
 
-  const agregarVariante = (variant: Variant, product: Product) => {
+  const agregarProducto = (product: Product) => {
     const ubicaciones = ["Estante 1", "Estante 2", "Estante 3", "Almacén A", "Almacén B"];
     const ubicacionAleatoria = ubicaciones[Math.floor(Math.random() * ubicaciones.length)];
     
     const nuevoItem: SaleItem = {
-      ...variant,
+      ...product,
       cantidad: 1,
-      selectedColor: variant.color_disenio,
       ubicacion: ubicacionAleatoria
     };
 
     const existingIndex = ventaItems.findIndex(item => 
-      item.idvariante === variant.idvariante
+      item.idproducto === product.idproducto
     );
 
     if (existingIndex !== -1) {
       const newItems = [...ventaItems];
-      if (newItems[existingIndex].cantidad < variant.stock) {
+      if (newItems[existingIndex].cantidad < product.stock) {
         newItems[existingIndex].cantidad += 1;
         setVentaItems(newItems);
       } else {
         toast({
           title: "Stock insuficiente",
-          description: `No hay suficiente stock para ${product.nombre} - ${variant.nombre_variante}`,
+          description: `No hay suficiente stock para ${product.nombre}`,
           variant: "destructive"
         });
         return;
       }
     } else {
-      if (variant.stock > 0) {
+      if (product.stock > 0) {
         setVentaItems([...ventaItems, nuevoItem]);
       } else {
         toast({
           title: "Sin stock",
-          description: `${product.nombre} - ${variant.nombre_variante} no tiene stock disponible`,
+          description: `${product.nombre}`,
           variant: "destructive"
         });
         return;
@@ -209,7 +207,7 @@ export function VenderView() {
     
     toast({
       title: "Producto agregado",
-      description: `${product.nombre} - ${variant.nombre_variante} agregado a la venta`,
+      description: `${product.nombre} agregado a la venta`,
     });
   };
 
@@ -335,11 +333,11 @@ export function VenderView() {
 
     try {
       const descripcion = ventaItems.map(item => 
-        `${item.cantidad} ${item.nombre_variante} - Bs ${formatBs(item.precio_venta)}`
+        `${item.cantidad} ${item.nombre} - Bs ${formatBs(item.precio_venta)}`
       ).join(", ");
 
       const items = ventaItems.map(item => ({
-        idvariante: item.idvariante,
+        idproducto: item.idproducto,
         cantidad: item.cantidad,
         precio_unitario: item.precio_venta,
         subtotal_linea: item.precio_venta * item.cantidad
@@ -434,9 +432,9 @@ export function VenderView() {
                       onClick={() => toggleProductExpansion(product.idproducto)}
                     >
                       <div className="flex items-start gap-3 flex-1">
-                        {product.variantes[0]?.imagenes?.[0] ? (
+                        {product.imagen ? (
                           <img
-                            src={`data:image/jpeg;base64,${product.variantes[0].imagenes[0]}`}
+                            src={`data:image/jpeg;base64,${product.imagen}`}
                             alt={product.nombre}
                             className="w-16 h-16 rounded-md object-cover"
                           />
@@ -453,70 +451,23 @@ export function VenderView() {
                             {product.descripcion}
                           </p>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <Badge variant="secondary" className="text-xs">
-                              {product.variantes.length} variantes
-                            </Badge>
                             <Badge variant="outline" className="text-xs">
                               {product.nombre_ubicacion}
                             </Badge>
                           </div>
+                          <p className="text-xs font-medium">
+                            Bs {formatBs(product.precio_venta)} | Stock: {product.stock}
+                          </p>
                         </div>
                       </div>
-                      <Button 
-                        variant="ghost" 
+                      <Button
                         size="sm"
+                        onClick={() => agregarProducto(product)}
+                        disabled={product.stock === 0}
                       >
-                        {expandedProduct === product.idproducto ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
+                        {product.stock === 0 ? "Sin Stock" : "Agregar"}
                       </Button>
                     </div>
-
-                    {expandedProduct === product.idproducto && (
-                      <div className="border-t pt-3 space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground">
-                          Seleccione una variante:
-                        </p>
-                        {product.variantes.map((variant) => (
-                          <div 
-                            key={variant.idvariante} 
-                            className="flex items-center gap-3 p-2 border rounded"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-wrap gap-1 mb-1">
-                                <Badge variant="secondary" className="text-xs">
-                                  {variant.color_disenio}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {variant.color_luz}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {variant.watt}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {variant.tamano}
-                                </Badge>
-                              </div>
-                              <p className="text-xs font-medium">
-                                Bs {formatBs(variant.precio_venta)} | Stock: {variant.stock}
-                              </p>
-                              <p className={`text-xs text-muted-foreground ${isMobile ? 'break-words' : ''}`}>
-                                {variant.nombre_variante}
-                              </p>
-                            </div>
-                            <Button
-                              size="sm"
-                              onClick={() => agregarVariante(variant, product)}
-                              disabled={variant.stock === 0}
-                            >
-                              {variant.stock === 0 ? "Sin Stock" : "Agregar"}
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -543,13 +494,13 @@ export function VenderView() {
             ) : (
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {ventaItems.map((item, index) => (
-                  <div key={item.idvariante} className="border rounded-lg p-3 bg-card">
+                  <div key={item.idproducto} className="border rounded-lg p-3 bg-card">
                     {/* Primera fila: Información del producto */}
                     <div className="flex items-start gap-3 mb-3">
-                      {item.imagenes?.[0] ? (
+                      {item.imagen ? (
                         <img
-                          src={`data:image/jpeg;base64,${item.imagenes[0]}`}
-                          alt={item.nombre_variante}
+                          src={`data:image/jpeg;base64,${item.imagen}`}
+                          alt={item.nombre}
                           className="w-12 h-12 rounded object-cover flex-shrink-0"
                         />
                       ) : (
@@ -559,7 +510,7 @@ export function VenderView() {
                       )}
                       <div className="flex-1 min-w-0">
                         <h5 className="font-medium text-sm break-words whitespace-normal leading-tight">
-                          {item.nombre_variante}
+                          {item.nombre}
                         </h5>
                         <p className="text-sm font-medium text-green-600 mt-1">
                           Bs {formatBs(item.precio_venta)} c/u

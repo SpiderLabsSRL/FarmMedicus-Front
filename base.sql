@@ -59,7 +59,11 @@ CREATE TABLE productos (
     nombre VARCHAR(200) NOT NULL,
     descripcion TEXT,
     idubicacion INTEGER REFERENCES ubicaciones(idubicacion),
-    estado SMALLINT DEFAULT 0
+    estado SMALLINT DEFAULT 0,
+    imagen bytea,
+    precio_venta integer NOT NULL DEFAULT 0,
+    precio_compra integer NOT NULL DEFAULT 0,
+    stock integer NOT NULL DEFAULT 0
 );
 
 -- Relación muchos a muchos: Productos - Categorías
@@ -112,7 +116,7 @@ CREATE TABLE ventas (
 CREATE TABLE detalle_ventas (
     iddetalle_venta SERIAL PRIMARY KEY,
     idventa INTEGER REFERENCES ventas(idventa) ON DELETE CASCADE,
-    idvariante INTEGER REFERENCES variantes(idvariante) NOT NULL,
+    idproducto INTEGER REFERENCES productos(idproducto) NOT NULL,
     cantidad INTEGER NOT NULL CHECK (cantidad > 0),
     precio_unitario DECIMAL(10,2) NOT NULL CHECK (precio_unitario >= 0),
     subtotal_linea DECIMAL(10,2) NOT NULL CHECK (subtotal_linea >= 0)

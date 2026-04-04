@@ -2,7 +2,6 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-// Interfaces para el backend
 interface BackendProduct {
   idproducto: number;
   nombre: string;
@@ -10,27 +9,9 @@ interface BackendProduct {
   estado: number;
   idubicacion: number;
   nombre_ubicacion: string;
-  variantes: BackendVariant[];
-}
-
-interface BackendVariant {
-  idvariante: number;
-  idproducto: number;
-  nombre_variante: string;
+  imagen: string;
   precio_venta: string;
-  precio_compra: string;
-  idcolor_disenio: number;
-  idcolor_luz: number;
-  idwatt: number;
-  idtamano: number;
   stock: number;
-  stock_minimo: number;
-  estado: number;
-  color_disenio: string;
-  color_luz: string;
-  watt: string;
-  tamano: string;
-  imagenes: string[];
 }
 
 interface BackendCashStatus {
@@ -43,27 +24,6 @@ interface BackendCashStatus {
   fecha_cierre: string | null;
 }
 
-// Interfaces para el frontend
-export interface Variant {
-  idvariante: number;
-  idproducto: number;
-  nombre_variante: string;
-  precio_venta: number;
-  precio_compra: number;
-  idcolor_disenio: number;
-  idcolor_luz: number;
-  idwatt: number;
-  idtamano: number;
-  stock: number;
-  stock_minimo: number;
-  estado: number;
-  color_disenio: string;
-  color_luz: string;
-  watt: string;
-  tamano: string;
-  imagenes: string[];
-}
-
 export interface Product {
   idproducto: number;
   nombre: string;
@@ -71,11 +31,13 @@ export interface Product {
   estado: number;
   idubicacion: number;
   nombre_ubicacion: string;
-  variantes: Variant[];
+  imagen: string;
+  precio_venta: number;
+  stock: number;
 }
 
 export interface SaleItem {
-  idvariante: number;
+  idproducto: number;
   cantidad: number;
   precio_unitario: number;
   subtotal_linea: number;
@@ -109,7 +71,6 @@ const api = axios.create({
   },
 });
 
-// Obtener productos para búsqueda
 export const searchProducts = async (query: string): Promise<Product[]> => {
   try {
     const response = await api.get<BackendProduct[]>(`/sales/products/search?q=${encodeURIComponent(query)}`);
@@ -117,7 +78,6 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
   } catch (error) {
     console.error("Error searching products:", error);
     
-    // Verificar si es un error de red o del servidor
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 500) {
         console.error("Server error details:", error.response.data);
@@ -129,7 +89,6 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
   }
 };
 
-// Obtener estado de caja
 export const getCashStatus = async (): Promise<CashStatus> => {
   try {
     const response = await api.get<BackendCashStatus>("/sales/cash-status");
@@ -140,7 +99,6 @@ export const getCashStatus = async (): Promise<CashStatus> => {
   }
 };
 
-// Procesar venta
 export const processSale = async (sale: SaleRequest, userId: number): Promise<{idventa: number}> => {
   try {
     const saleWithUser = {
@@ -156,7 +114,6 @@ export const processSale = async (sale: SaleRequest, userId: number): Promise<{i
   }
 };
 
-// Mapeadores
 function mapBackendProduct(product: BackendProduct): Product {
   return {
     idproducto: product.idproducto,
@@ -165,29 +122,9 @@ function mapBackendProduct(product: BackendProduct): Product {
     estado: product.estado,
     idubicacion: product.idubicacion,
     nombre_ubicacion: product.nombre_ubicacion,
-    variantes: product.variantes.map(mapBackendVariant)
-  };
-}
-
-function mapBackendVariant(variant: BackendVariant): Variant {
-  return {
-    idvariante: variant.idvariante,
-    idproducto: variant.idproducto,
-    nombre_variante: variant.nombre_variante,
-    precio_venta: parseFloat(variant.precio_venta),
-    precio_compra: parseFloat(variant.precio_compra),
-    idcolor_disenio: variant.idcolor_disenio,
-    idcolor_luz: variant.idcolor_luz,
-    idwatt: variant.idwatt,
-    idtamano: variant.idtamano,
-    stock: variant.stock,
-    stock_minimo: variant.stock_minimo,
-    estado: variant.estado,
-    color_disenio: variant.color_disenio,
-    color_luz: variant.color_luz,
-    watt: variant.watt,
-    tamano: variant.tamano,
-    imagenes: variant.imagenes
+    imagen: product.imagen,
+    precio_venta: parseFloat(product.precio_venta),
+    stock: product.stock
   };
 }
 
