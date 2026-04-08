@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-interface BackendProduct {
+export interface BackendProduct {
   idproducto: number;
   nombre: string;
   descripcion: string;
@@ -71,9 +71,9 @@ const api = axios.create({
   },
 });
 
-export const searchProducts = async (query: string): Promise<Product[]> => {
+export const searchProducts = async (query: string, withoutStock: boolean = true): Promise<Product[]> => {
   try {
-    const response = await api.get<BackendProduct[]>(`/sales/products/search?q=${encodeURIComponent(query)}`);
+    const response = await api.get<BackendProduct[]>(`/sales/products/search?q=${encodeURIComponent(query)}&withoutStock=${encodeURIComponent(withoutStock)}`);
     return response.data.map(mapBackendProduct);
   } catch (error) {
     console.error("Error searching products:", error);
@@ -114,7 +114,7 @@ export const processSale = async (sale: SaleRequest, userId: number): Promise<{i
   }
 };
 
-function mapBackendProduct(product: BackendProduct): Product {
+export function mapBackendProduct(product: BackendProduct): Product {
   return {
     idproducto: product.idproducto,
     nombre: product.nombre,

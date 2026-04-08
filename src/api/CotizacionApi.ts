@@ -1,37 +1,7 @@
 import axios from "axios";
+import { BackendProduct, mapBackendProduct, Product } from "./SalesApi";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-// Interfaces para el backend (igual que en ventas)
-interface BackendProduct {
-  idproducto: number;
-  nombre: string;
-  descripcion: string;
-  estado: number;
-  idubicacion: number;
-  nombre_ubicacion: string;
-  variantes: BackendVariant[];
-}
-
-interface BackendVariant {
-  idvariante: number;
-  idproducto: number;
-  nombre_variante: string;
-  precio_venta: string;
-  precio_compra: string;
-  idcolor_disenio: number;
-  idcolor_luz: number;
-  idwatt: number;
-  idtamano: number;
-  stock: number;
-  stock_minimo: number;
-  estado: number;
-  color_disenio: string;
-  color_luz: string;
-  watt: string;
-  tamano: string;
-  imagenes: string[];
-}
 
 interface BackendCotizacion {
   idcotizacion: number;
@@ -55,44 +25,11 @@ interface BackendCotizacion {
 interface BackendDetalleCotizacion {
   iddetalle_cotizacion: number;
   idcotizacion: number;
-  idvariante: number;
+  idproducto: number;
   cantidad: number;
   precio_unitario: string;
   subtotal_linea: string;
-  nombre_variante?: string;
   producto_nombre?: string;
-  color_disenio?: string;
-}
-
-// Interfaces para el frontend (igual que en ventas)
-export interface Variante {
-  id: number;
-  idproducto: number;
-  nombre_variante: string;
-  precio_venta: number;
-  precio_compra: number;
-  idcolor_disenio: number;
-  idcolor_luz: number;
-  idwatt: number;
-  idtamano: number;
-  stock: number;
-  stock_minimo: number;
-  estado: number;
-  color_disenio: string;
-  color_luz: string;
-  watt: string;
-  tamano: string;
-  imagenes: string[];
-}
-
-export interface Producto {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  estado: number;
-  idubicacion: number;
-  nombre_ubicacion: string;
-  variantes: Variante[];
 }
 
 export interface Cotizacion {
@@ -117,13 +54,11 @@ export interface Cotizacion {
 export interface DetalleCotizacion {
   iddetalle_cotizacion: number;
   idcotizacion: number;
-  idvariante: number;
+  idproducto: number;
   cantidad: number;
   precio_unitario: number;
   subtotal_linea: number;
-  nombre_variante?: string;
   producto_nombre?: string;
-  color_disenio?: string;
 }
 
 // MODIFICADO: Actualizado para incluir "Contra Entrega"
@@ -139,7 +74,7 @@ export interface CotizacionRequest {
   abono: number;
   saldo: number;
   items: Array<{
-    idvariante: number;
+    idproducto: number;
     cantidad: number;
     precio_unitario: number;
     subtotal_linea: number;
@@ -153,41 +88,6 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
-
-// Mapeadores (igual que en ventas)
-function mapBackendProduct(product: BackendProduct): Producto {
-  return {
-    id: product.idproducto,
-    nombre: product.nombre,
-    descripcion: product.descripcion,
-    estado: product.estado,
-    idubicacion: product.idubicacion,
-    nombre_ubicacion: product.nombre_ubicacion,
-    variantes: product.variantes.map(mapBackendVariant)
-  };
-}
-
-function mapBackendVariant(variant: BackendVariant): Variante {
-  return {
-    id: variant.idvariante,
-    idproducto: variant.idproducto,
-    nombre_variante: variant.nombre_variante,
-    precio_venta: parseFloat(variant.precio_venta),
-    precio_compra: parseFloat(variant.precio_compra),
-    idcolor_disenio: variant.idcolor_disenio,
-    idcolor_luz: variant.idcolor_luz,
-    idwatt: variant.idwatt,
-    idtamano: variant.idtamano,
-    stock: variant.stock,
-    stock_minimo: variant.stock_minimo,
-    estado: variant.estado,
-    color_disenio: variant.color_disenio,
-    color_luz: variant.color_luz,
-    watt: variant.watt,
-    tamano: variant.tamano,
-    imagenes: variant.imagenes
-  };
-}
 
 // Mapeador CORREGIDO para cotizaciones - maneja correctamente la vigencia
 function mapBackendCotizacion(cotizacion: BackendCotizacion): Cotizacion {
@@ -243,36 +143,6 @@ function mapBackendDetalleCotizacion(detalle: BackendDetalleCotizacion): Detalle
     subtotal_linea: parseFloat(detalle.subtotal_linea)
   };
 }
-
-// API functions
-export const getProductos = async (): Promise<Producto[]> => {
-  try {
-    const response = await api.get<BackendProduct[]>("/cotizaciones/productos");
-    return response.data.map(mapBackendProduct);
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    throw new Error("No se pudieron cargar los productos");
-  }
-};
-
-export const searchProductos = async (query: string): Promise<Producto[]> => {
-  try {
-    const response = await api.get<BackendProduct[]>(`/cotizaciones/productos/search?q=${encodeURIComponent(query)}`);
-    return response.data.map(mapBackendProduct);
-  } catch (error) {
-    console.error("Error searching products:", error);
-    
-    // Manejo de errores mejorado
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 500) {
-        console.error("Server error details:", error.response.data);
-        throw new Error("Error del servidor al buscar productos. Por favor, intente nuevamente.");
-      }
-    }
-    
-    throw new Error("No se pudieron buscar los productos");
-  }
-};
 
 export const createCotizacion = async (cotizacion: CotizacionRequest): Promise<Cotizacion> => {
   try {

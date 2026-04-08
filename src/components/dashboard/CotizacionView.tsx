@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,7 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CotizacionItemPDF, DatosClientePDF } from "./CotizacionPDF";
 import { downloadCotizacionAsPDF } from "./cotizacionPdfUtils";
-import { getProductos, searchProductos, createCotizacion, getCotizaciones, getCotizacionById, deleteCotizacion, searchCotizaciones, Producto, Variante, CotizacionRequest, Cotizacion, DetalleCotizacion } from "@/api/CotizacionApi";
+import { createCotizacion, getCotizacionById, deleteCotizacion, searchCotizaciones, CotizacionRequest } from "@/api/CotizacionApi";
+import { Product, searchProducts } from "@/api/SalesApi";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const WhatsappIcon = ({ className = "w-4 h-4" }) => (
   <svg
@@ -42,12 +43,9 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 // Interfaces actualizadas
-interface CotizacionItem extends Variante {
+interface CotizacionItem extends Product {
   cantidad: number;
-  productoNombre: string;
-  productoDescripcion: string;
-  selectedColor?: string;
-  uniqueId: string; // ID único para evitar problemas con keys
+  uniqueId: string;
 }
 
 interface DatosCliente {
@@ -113,17 +111,9 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
-// Función helper para formatear el nombre del producto
-const formatProductName = (productName: string, color?: string) => {
-  if (!color || color === "" || color === "General") {
-    return productName;
-  }
-  return `${productName} - ${color}`;
-};
-
 export function CotizacionView() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Producto[]>([]);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [cotizacionItems, setCotizacionItems] = useState<CotizacionItem[]>([]);
   const [datosCliente, setDatosCliente] = useState<DatosCliente>({
     nombre: "",
@@ -142,6 +132,7 @@ export function CotizacionView() {
   const [loadingCotizaciones, setLoadingCotizaciones] = useState(false);
   const [alert, setAlert] = useState<AlertState>({ show: false, title: "", message: "" });
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const lastSearchQueryRef = useRef<string>("");
@@ -161,7 +152,6 @@ export function CotizacionView() {
       performSearch(debouncedSearchQuery);
     } else if (debouncedSearchQuery.trim().length < 2) {
       setSearchResults([]);
-      setExpandedProduct(null);
       lastSearchQueryRef.current = "";
     }
   }, [debouncedSearchQuery]);
@@ -189,7 +179,7 @@ export function CotizacionView() {
     setLoading(true);
 
     try {
-      const results = await searchProductos(query);
+      const results = await searchProducts(query, false);
       setSearchResults(results);
 
       // Mantener el foco después de la búsqueda
@@ -245,29 +235,25 @@ export function CotizacionView() {
     e.stopPropagation();
   };
 
-  const toggleProductExpansion = useCallback((productId: number) => {
-    setExpandedProduct(prev => prev === productId ? null : productId);
+  const toggleProductExpansion = (productId: number) => {
+    setExpandedProduct(expandedProduct === productId ? null : productId);
+    
+    // Asegurarse de que el teclado esté oculto cuando se expanden/contraen las variantes
+    if (searchInputRef.current) {
+      searchInputRef.current.blur();
+    }
+  };
 
-    setTimeout(() => {
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-      }
-    }, 10);
-  }, []);
-
-  const agregarVariante = useCallback((product: Producto, variante: Variante) => {
+  const agregarProducto = useCallback((product: Product) => {
     const nuevoItem: CotizacionItem = {
-      ...variante,
+      ...product,
       cantidad: 1,
-      productoNombre: product.nombre,
-      productoDescripcion: product.descripcion,
-      selectedColor: variante.color_disenio,
       uniqueId: generateUniqueId() // Agregar ID único
     };
 
     setCotizacionItems(prevItems => {
       const existingIndex = prevItems.findIndex(item =>
-        item.id === variante.id && item.color_disenio === variante.color_disenio
+        item.idproducto === product.idproducto
       );
 
       if (existingIndex !== -1) {
@@ -281,7 +267,6 @@ export function CotizacionView() {
 
     setSearchQuery("");
     setSearchResults([]);
-    setExpandedProduct(null);
 
     setTimeout(() => {
       if (searchInputRef.current) {
@@ -292,7 +277,7 @@ export function CotizacionView() {
 
     toast({
       title: "Producto agregado",
-      description: `${formatProductName(product.nombre, variante.color_disenio)} agregado a la cotización`,
+      description: `${product.nombre} agregado a la cotización`,
     });
   }, [toast]);
 
@@ -351,13 +336,10 @@ export function CotizacionView() {
   // Handler para descargar el PDF
   const handleDownloadPDF = async () => {
     const itemsPDF: CotizacionItemPDF[] = cotizacionItems.map(item => ({
-      id: item.id.toString(),
-      name: `${item.productoNombre} - ${item.nombre_variante || item.color_disenio}`, // Modificado
-      productoNombre: item.productoNombre,
-      nombre_variante: item.nombre_variante || item.color_disenio,
+      id: item.idproducto.toString(),
+      name: item.nombre,
       price: item.precio_venta,
       cantidad: item.cantidad,
-      selectedColor: item.color_disenio,
       stock: item.stock
     }));
 
@@ -443,7 +425,7 @@ export function CotizacionView() {
           abono: 0,
           saldo: totalFinal,
           items: cotizacionItems.map(item => ({
-            idvariante: item.id,
+            idproducto: item.idproducto,
             cantidad: item.cantidad,
             precio_unitario: item.precio_venta,
             subtotal_linea: item.precio_venta * item.cantidad
@@ -550,30 +532,20 @@ export function CotizacionView() {
     setLoading(true);
     try {
       const { cotizacion, detalles } = await getCotizacionById(idcotizacion);
-
-      // Mapear los detalles a items de cotización
+        
       const items: CotizacionItem[] = detalles.map(detalle => ({
-        id: detalle.idvariante,
-        idproducto: 0,
-        nombre_variante: detalle.nombre_variante || "Producto",
+        idproducto: detalle.idproducto,
+        nombre: detalle.producto_nombre,
         precio_venta: detalle.precio_unitario,
         precio_compra: 0,
-        idcolor_disenio: 0,
-        idcolor_luz: 0,
-        idwatt: 0,
-        idtamano: 0,
         stock: 0,
         stock_minimo: 0,
         estado: 0,
-        color_disenio: detalle.color_disenio || "",
-        color_luz: "",
-        watt: "",
-        tamano: "",
-        imagenes: [],
+        idubicacion: 0,
+        nombre_ubicacion: '',
+        imagen: '',
         cantidad: detalle.cantidad,
-        productoNombre: detalle.producto_nombre || "Producto",
-        productoDescripcion: "",
-        selectedColor: detalle.color_disenio || "",
+        descripcion: "",
         uniqueId: generateUniqueId() // ID único para cada item
       }));
 
@@ -738,9 +710,9 @@ export function CotizacionView() {
                     <tr key={item.uniqueId}>
                       <td className="border border-gray-300 p-2">
                         <div>
-                          <p className="font-medium">{formatProductName(item.productoNombre, item.color_disenio)}</p>
+                          <p className="font-medium">{item.nombre}</p>
                           <p className="text-sm text-muted-foreground">
-                            {item.productoDescripcion}
+                            {item.descripcion}
                           </p>
                         </div>
                       </td>
@@ -883,11 +855,10 @@ export function CotizacionView() {
                   {cotizacionItems.map((item) => (
                     <div key={item.uniqueId} className="border rounded-lg p-3 space-y-2">
                       <div>
-                        {/* CAMBIO 1: Mostrar productoNombre - nombre_variante */}
                         <h4 className="font-bold text-base break-words whitespace-normal leading-tight">
-                          {item.productoNombre} - {item.nombre_variante || item.color_disenio}
+                          {item.nombre}
                         </h4>
-                        <p className="text-xs text-muted-foreground">{item.productoDescripcion}</p>
+                        <p className="text-xs text-muted-foreground">{item.descripcion}</p>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
@@ -987,9 +958,8 @@ export function CotizacionView() {
                           <TableRow key={item.uniqueId}>
                             <TableCell colSpan={3}>
                               <div>
-                                {/* CAMBIO 2: Mostrar productoNombre - nombre_variante en desktop */}
                                 <p className="font-bold text-base">
-                                  {item.productoNombre} - {item.nombre_variante || item.color_disenio}
+                                  {item.nombre}
                                 </p>
                               </div>
                             </TableCell>
@@ -1199,21 +1169,17 @@ export function CotizacionView() {
               {!loading && searchResults.length > 0 && (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {searchResults.map((product) => (
-                    <div key={product.id} className="border rounded-lg p-4 space-y-3">
-                      <div
+                    <div key={product.idproducto} className="border rounded-lg p-4 space-y-3">
+                      <div 
                         className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleProductExpansion(product.id)}
-                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => toggleProductExpansion(product.idproducto)}
                       >
                         <div className="flex items-start gap-3 flex-1">
-                          {product.variantes && product.variantes.length > 0 && product.variantes[0].imagenes && product.variantes[0].imagenes.length > 0 ? (
+                          {product.imagen ? (
                             <img
-                              src={product.variantes[0].imagenes[0]}
+                              src={`data:image/jpeg;base64,${product.imagen}`}
                               alt={product.nombre}
                               className="w-16 h-16 rounded-md object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = "https://via.placeholder.com/80x80/f3f4f6/000000?text=Producto";
-                              }}
                             />
                           ) : (
                             <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center">
@@ -1221,152 +1187,29 @@ export function CotizacionView() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm">{product.nombre}</h4>
+                            <h4 className={`font-semibold text-sm ${isMobile ? 'break-words' : ''}`}>
+                              {product.nombre}
+                            </h4>
                             <p className="text-xs text-muted-foreground line-clamp-2">
                               {product.descripcion}
                             </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="secondary" className="text-xs">
-                                {product.variantes?.length || 0} variantes
-                              </Badge>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <Badge variant="outline" className="text-xs">
                                 {product.nombre_ubicacion}
                               </Badge>
                             </div>
+                            <p className="text-xs font-medium">
+                              Bs {formatBs(product.precio_venta)} | Stock: {product.stock}
+                            </p>
                           </div>
                         </div>
                         <Button
-                          variant="ghost"
                           size="sm"
-                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => agregarProducto(product)}
                         >
-                          {expandedProduct === product.id ? (
-                            <ChevronUp className="h-4 w-4" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4" />
-                          )}
+                          Agregar
                         </Button>
                       </div>
-
-                      {expandedProduct === product.id && product.variantes && product.variantes.length > 0 && (
-                        <div className="border-t pt-3 space-y-2">
-                          <p className="text-xs font-medium text-muted-foreground">
-                            Seleccione una variante:
-                          </p>
-                          {product.variantes.map((variant) => (
-                            <div
-                              key={`${variant.id}-${variant.color_disenio}`}
-                              className="flex items-center gap-3 p-2 border rounded"
-                              onMouseDown={(e) => e.preventDefault()}
-                            >
-                              <div className="flex-shrink-0">
-                                {variant.imagenes && variant.imagenes.length > 0 ? (
-                                  <img
-                                    src={variant.imagenes[0]}
-                                    alt={variant.nombre_variante}
-                                    className="w-12 h-12 rounded object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src = "https://via.placeholder.com/50x50/f3f4f6/000000?text=Variante";
-                                    }}
-                                  />
-                                ) : product.variantes && product.variantes[0]?.imagenes?.[0] ? (
-                                  <img
-                                    src={product.variantes[0].imagenes[0]}
-                                    alt={variant.nombre_variante}
-                                    className="w-12 h-12 rounded object-cover"
-                                    onError={(e) => {
-                                      e.currentTarget.src = "https://via.placeholder.com/50x50/f3f4f6/000000?text=Producto";
-                                    }}
-                                  />
-                                ) : (
-                                  <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
-                                    <span className="text-xs text-muted-foreground">Sin img</span>
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                {/* CAMBIO 3: nombre_variante en negrita y tamaño grande al inicio */}
-                                <p className="text-base font-bold mb-2 text-gray-800 line-clamp-2">
-                                  {variant.nombre_variante}
-                                </p>
-
-                                {/* Luego mostrar las badges con las características */}
-                                <div className="flex flex-wrap gap-1 mb-2">
-                                  {variant.color_disenio && variant.color_disenio !== "General" && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      {variant.color_disenio}
-                                    </Badge>
-                                  )}
-                                  {variant.color_luz && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {variant.color_luz}
-                                    </Badge>
-                                  )}
-                                  {variant.watt && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {variant.watt}
-                                    </Badge>
-                                  )}
-                                  {variant.tamano && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {variant.tamano}
-                                    </Badge>
-                                  )}
-                                </div>
-
-                                {/* Finalmente el precio y stock */}
-                                <p className="text-xs font-medium">
-                                  Bs {formatBs(variant.precio_venta)} | Stock: {variant.stock}
-                                </p>
-                              </div>
-                              <Button
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  agregarVariante(product, variant);
-                                }}
-                                onMouseDown={(e) => e.preventDefault()}
-                              >
-                                Agregar
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {expandedProduct === product.id && (!product.variantes || product.variantes.length === 0) && (
-                        <div className="border-t pt-3">
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              const defaultVariant: Variante = {
-                                id: product.id,
-                                idproducto: product.id,
-                                nombre_variante: product.nombre,
-                                precio_venta: 0,
-                                precio_compra: 0,
-                                idcolor_disenio: 0,
-                                idcolor_luz: 0,
-                                idwatt: 0,
-                                idtamano: 0,
-                                stock: 0,
-                                stock_minimo: 0,
-                                estado: 0,
-                                color_disenio: "",
-                                color_luz: "",
-                                watt: "",
-                                tamano: "",
-                                imagenes: []
-                              };
-                              agregarVariante(product, defaultVariant);
-                            }}
-                            className="w-full"
-                            onMouseDown={(e) => e.preventDefault()}
-                          >
-                            Agregar Producto
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -1396,10 +1239,10 @@ export function CotizacionView() {
                     <div key={item.uniqueId} className="border rounded-lg p-3 bg-card">
                       {/* Primera fila: Información del producto */}
                       <div className="flex items-start gap-3 mb-3">
-                        {item.imagenes && item.imagenes.length > 0 ? (
+                        {item.imagen ? (
                           <img
-                            src={item.imagenes[0]}
-                            alt={item.productoNombre}
+                            src={item.imagen}
+                            alt={item.nombre}
                             className="w-12 h-12 rounded object-cover flex-shrink-0"
                             onError={(e) => {
                               e.currentTarget.src = "https://via.placeholder.com/50x50/f3f4f6/000000?text=Producto";
@@ -1413,7 +1256,7 @@ export function CotizacionView() {
                         <div className="flex-1 min-w-0">
                           {/* CAMBIO 4: Mostrar productoNombre - nombre_variante en negrita y tamaño grande */}
                           <h5 className="font-bold text-base break-words whitespace-normal leading-tight">
-                            {item.productoNombre} - {item.nombre_variante || item.color_disenio}
+                            {item.nombre}
                           </h5>
                           <p className="text-sm font-medium text-green-600 mt-1">
                             Bs {formatBs(item.precio_venta)} c/u

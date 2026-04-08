@@ -8,15 +8,11 @@ import jsPDF from "jspdf";
 export interface CotizacionItemPDF {
   id: string | number;
   name: string;
-  selectedColor?: string;
   category?: string;
-  type?: string;
   stock?: number;
   price: number;
   cantidad: number;
-  images?: string[];
-  productoNombre?: string; // NUEVO: nombre del producto
-  nombre_variante?: string; // NUEVO: nombre completo de la variante
+  imagen?: string;
 }
 
 export interface DatosClientePDF {
@@ -365,17 +361,8 @@ function formatTipoPago(tp?: string) {
 function itemRowHtml(item: CotizacionItemPDF) {
   const total = (item.price || 0) * (item.cantidad || 0);
   
-  // Construir el nombre: productoNombre - nombre_variante
-  let displayName = "";
-  
-  if (item.productoNombre && item.nombre_variante) {
-    displayName = `${escapeHtml(item.productoNombre)} - ${escapeHtml(item.nombre_variante)}`;
-  } else if (item.productoNombre && !item.nombre_variante && item.selectedColor) {
-    displayName = `${escapeHtml(item.productoNombre)} - ${escapeHtml(item.selectedColor)}`;
-  } else {
-    displayName = escapeHtml(item.name);
-  }
-  
+  let displayName = item.name;
+    
   // **SOLUCIÓN DEFINITIVA: Solo mostrar el nombre, sin metadatos ni stock**
   return `
     <tr>

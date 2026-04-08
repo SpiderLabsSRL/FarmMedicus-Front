@@ -164,7 +164,7 @@ CREATE TABLE cotizaciones (
 CREATE TABLE detalle_cotizaciones (
     iddetalle_cotizacion SERIAL PRIMARY KEY,
     idcotizacion INTEGER REFERENCES cotizaciones(idcotizacion) ON DELETE CASCADE,
-    idvariante INTEGER REFERENCES variantes(idvariante) NOT NULL,
+    idproducto INTEGER REFERENCES productos(idproducto) NOT NULL,
     cantidad INTEGER NOT NULL CHECK (cantidad > 0),
     precio_unitario DECIMAL(10,2) NOT NULL CHECK (precio_unitario >= 0),
     subtotal_linea DECIMAL(10,2) NOT NULL CHECK (subtotal_linea >= 0)
@@ -173,7 +173,7 @@ CREATE TABLE detalle_cotizaciones (
 CREATE TABLE productos_pendientes_cotizacion (
     idproducto_pendiente SERIAL PRIMARY KEY,
     idcotizacion INTEGER REFERENCES cotizaciones(idcotizacion) ON DELETE CASCADE,
-    idvariante INTEGER REFERENCES variantes(idvariante) NOT NULL,
+    idproducto INTEGER REFERENCES productos(idproducto) NOT NULL,
     cantidad_pendiente INTEGER NOT NULL CHECK (cantidad_pendiente >= 0)
 );
 
