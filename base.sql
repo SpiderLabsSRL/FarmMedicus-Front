@@ -158,7 +158,7 @@ CREATE TABLE cotizaciones (
     saldo DECIMAL(10,2) DEFAULT 0 CHECK (saldo >= 0),
     estado SMALLINT DEFAULT 0 CHECK (estado IN (0, 1)), -- 0 activo, 1 eliminado
     idusuario INTEGER REFERENCES usuarios(idusuario) NOT NULL,
-    fecha_creacion TIMESTAMP DEFAULT TIMEZONE('America/La_Paz', NOW());
+    fecha_creacion TIMESTAMP DEFAULT TIMEZONE('America/La_Paz', NOW())
 );
 
 CREATE TABLE detalle_cotizaciones (
