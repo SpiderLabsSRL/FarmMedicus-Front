@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Plus, Minus, Trash2 } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Minus,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,6 +70,12 @@ export function VenderView() {
   const [cajaAbierta, setCajaAbierta] = useState(false);
   const [loading, setLoading] = useState(false);
   const [expandedProduct, setExpandedProduct] = useState<number | null>(null);
+  const [similarProductsData, setSimilarProductsData] = useState<
+    Map<number, Product[]>
+  >(new Map());
+  const [loadingSimilars, setLoadingSimilars] = useState<Map<number, boolean>>(
+    new Map(),
+  );
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const cartRef = useRef<HTMLDivElement>(null);
@@ -76,14 +89,12 @@ export function VenderView() {
   const username = currentUser?.nombres || "Usuario";
   const userId = getUserId();
 
-  // Usar el hook de debounce para la búsqueda
   const debouncedSearchQuery = useDebounce(searchQuery, 1000);
 
   useEffect(() => {
     loadCashStatus();
   }, []);
 
-  // Efecto para manejar la búsqueda con debounce
   useEffect(() => {
     if (
       debouncedSearchQuery.trim().length >= 2 &&
@@ -94,82 +105,124 @@ export function VenderView() {
     } else if (debouncedSearchQuery.trim().length < 2) {
       setSearchResults([]);
       setExpandedProduct(null);
+      setSimilarProductsData(new Map());
       lastSearchQueryRef.current = "";
     }
   }, [debouncedSearchQuery]);
 
-  // Configurar el listener global para el código de barras
+  // Cargar productos similares cuando se expande un producto
   useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      // Ignorar si estamos en un input/textarea/select
-      const target = event.target as HTMLElement;
+    if (expandedProduct !== null) {
+      const product = searchResults.find(
+        (p) => p.idproducto === expandedProduct,
+      );
       if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.tagName === "SELECT"
+        product &&
+        product.productos_similares &&
+        product.productos_similares.length > 0
       ) {
-        return;
+        loadSimilarProducts(expandedProduct, product.productos_similares);
       }
+    }
+  }, [expandedProduct, searchResults]);
 
-      // Ignorar teclas de control
-      if (event.ctrlKey || event.altKey || event.metaKey) {
-        return;
-      }
+  const loadSimilarProducts = async (
+    productId: number,
+    similares: Array<{ idproducto: number; nombre: string }>,
+  ) => {
+    if (similarProductsData.has(productId)) return;
 
-      // Los lectores de código de barras suelen terminar con Enter
-      if (event.key === "Enter") {
-        if (barcodeBufferRef.current.length > 0) {
-          event.preventDefault();
-          const barcode = barcodeBufferRef.current;
-          barcodeBufferRef.current = "";
+    setLoadingSimilars((prev) => new Map(prev).set(productId, true));
 
-          if (barcodeTimeoutRef.current) {
-            clearTimeout(barcodeTimeoutRef.current);
-            barcodeTimeoutRef.current = null;
+    try {
+      const similarProducts: Product[] = [];
+      for (const similar of similares) {
+        try {
+          const results = await searchProducts(similar.nombre);
+          const found = results.find(
+            (p) => p.idproducto === similar.idproducto,
+          );
+          if (found) {
+            similarProducts.push(found);
           }
-
-          // Procesar el código de barras
-          setSearchQuery(barcode);
-
-          // Mantener el foco en el input
-          setTimeout(() => {
-            if (searchInputRef.current) {
-              searchInputRef.current.focus();
-            }
-          }, 0);
-
-          // Opcional: mostrar feedback visual
-          toast({
-            title: "Código escaneado",
-            description: `Buscando: ${barcode}`,
-            duration: 1000,
-          });
+        } catch (error) {
+          console.error(
+            `Error loading similar product ${similar.idproducto}:`,
+            error,
+          );
         }
-        return;
       }
 
-      // Solo procesar caracteres imprimibles (los lectores envían caracteres individuales)
-      if (event.key.length === 1) {
-        event.preventDefault();
+      setSimilarProductsData((prev) =>
+        new Map(prev).set(productId, similarProducts),
+      );
+    } catch (error) {
+      console.error("Error loading similar products:", error);
+    } finally {
+      setLoadingSimilars((prev) => new Map(prev).set(productId, false));
+    }
+  };
 
-        // Limpiar el timeout anterior
+  const handleKeyPress = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement;
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.tagName === "SELECT"
+    ) {
+      return;
+    }
+
+    if (event.ctrlKey || event.altKey || event.metaKey) {
+      return;
+    }
+
+    if (event.key === "Enter") {
+      if (barcodeBufferRef.current.length > 0) {
+        event.preventDefault();
+        const barcode = barcodeBufferRef.current;
+        barcodeBufferRef.current = "";
+
         if (barcodeTimeoutRef.current) {
           clearTimeout(barcodeTimeoutRef.current);
+          barcodeTimeoutRef.current = null;
         }
 
-        // Agregar el carácter al buffer
-        barcodeBufferRef.current += event.key;
+        setSearchQuery(barcode);
 
-        // Establecer timeout para resetear el buffer si no se completa el código
-        barcodeTimeoutRef.current = setTimeout(() => {
-          barcodeBufferRef.current = "";
-          barcodeTimeoutRef.current = null;
-        }, 100); // 100ms es suficiente entre caracteres de un código de barras
+        setTimeout(() => {
+          if (searchInputRef.current) {
+            searchInputRef.current.focus();
+          }
+        }, 0);
+
+        toast({
+          title: "Código escaneado",
+          description: `Buscando: ${barcode}`,
+          duration: 1000,
+        });
       }
-    };
+      return;
+    }
 
+    if (event.key.length === 1) {
+      event.preventDefault();
+
+      if (barcodeTimeoutRef.current) {
+        clearTimeout(barcodeTimeoutRef.current);
+      }
+
+      barcodeBufferRef.current += event.key;
+
+      barcodeTimeoutRef.current = setTimeout(() => {
+        barcodeBufferRef.current = "";
+        barcodeTimeoutRef.current = null;
+      }, 100);
+    }
+  };
+
+  useEffect(() => {
     window.addEventListener("keydown", handleKeyPress);
-
     return () => {
       window.removeEventListener("keydown", handleKeyPress);
       if (barcodeTimeoutRef.current) {
@@ -197,8 +250,9 @@ export function VenderView() {
     try {
       const results = await searchProducts(query);
       setSearchResults(results);
+      setSimilarProductsData(new Map());
 
-      // Mantener el foco en el input después de la búsqueda
+      // Mantener el foco después de la búsqueda
       setTimeout(() => {
         if (searchInputRef.current) {
           searchInputRef.current.focus();
@@ -223,25 +277,18 @@ export function VenderView() {
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // No prevenir el comportamiento por defecto para mantener el foco
     if (e.key === "Enter") {
       e.preventDefault();
-      // Mantener el foco
       if (searchInputRef.current) {
         searchInputRef.current.focus();
       }
     }
   };
 
-  const handleSearchFocus = () => {
-    // Solo para debugging, puedes comentar esto después
-    console.log("Search input focused");
-  };
-
   const toggleProductExpansion = (productId: number) => {
     setExpandedProduct(expandedProduct === productId ? null : productId);
 
-    // Mantener el foco en el input después de expandir/contraer
+    // Mantener el foco después de expandir/contraer
     setTimeout(() => {
       if (searchInputRef.current) {
         searchInputRef.current.focus();
@@ -250,20 +297,9 @@ export function VenderView() {
   };
 
   const agregarProducto = (product: Product) => {
-    const ubicaciones = [
-      "Estante 1",
-      "Estante 2",
-      "Estante 3",
-      "Almacén A",
-      "Almacén B",
-    ];
-    const ubicacionAleatoria =
-      ubicaciones[Math.floor(Math.random() * ubicaciones.length)];
-
     const nuevoItem: SaleItem = {
       ...product,
       cantidad: 1,
-      ubicacion: ubicacionAleatoria,
     };
 
     const existingIndex = ventaItems.findIndex(
@@ -296,25 +332,12 @@ export function VenderView() {
       }
     }
 
-    setSearchQuery("");
-    setSearchResults([]);
-    setExpandedProduct(null);
-
-    // Mantener el foco en el input después de agregar un producto
+    // Mantener el foco después de agregar producto
     setTimeout(() => {
       if (searchInputRef.current) {
         searchInputRef.current.focus();
       }
     }, 0);
-
-    if (isMobile && cartRef.current) {
-      setTimeout(() => {
-        cartRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }, 100);
-    }
 
     toast({
       title: "Producto agregado",
@@ -322,9 +345,59 @@ export function VenderView() {
     });
   };
 
+  const getImageUrl = (imagen: any): string | null => {
+    if (!imagen) return null;
+
+    if (typeof imagen === "string") {
+      if (imagen.startsWith("http") || imagen.startsWith("data:image")) {
+        return imagen;
+      }
+      if (imagen.length > 0 && !imagen.includes("object")) {
+        return `data:image/jpeg;base64,${imagen}`;
+      }
+      return null;
+    }
+
+    if (imagen && imagen.data && Array.isArray(imagen.data)) {
+      try {
+        const uint8Array = new Uint8Array(imagen.data);
+        let binary = "";
+        for (let i = 0; i < uint8Array.length; i++) {
+          binary += String.fromCharCode(uint8Array[i]);
+        }
+        const base64 = btoa(binary);
+        return `data:image/jpeg;base64,${base64}`;
+      } catch (e) {
+        console.error("Error converting image buffer:", e);
+        return null;
+      }
+    }
+
+    if (
+      imagen &&
+      typeof imagen === "object" &&
+      imagen.type === "Buffer" &&
+      Array.isArray(imagen.data)
+    ) {
+      try {
+        const uint8Array = new Uint8Array(imagen.data);
+        let binary = "";
+        for (let i = 0; i < uint8Array.length; i++) {
+          binary += String.fromCharCode(uint8Array[i]);
+        }
+        const base64 = btoa(binary);
+        return `data:image/jpeg;base64,${base64}`;
+      } catch (e) {
+        console.error("Error converting Buffer:", e);
+        return null;
+      }
+    }
+
+    return null;
+  };
+
   const actualizarCantidad = (index: number, nuevaCantidad: number) => {
     if (nuevaCantidad < 1) {
-      // Si es menor a 1, eliminar el producto
       eliminarItem(index);
       return;
     }
@@ -345,17 +418,16 @@ export function VenderView() {
   };
 
   const handleCantidadInputChange = (index: number, value: string) => {
-    // Si el campo está vacío, poner 0 internamente (para bloquear el botón) pero mostrar vacío
     if (value === "") {
       const newItems = [...ventaItems];
-      newItems[index].cantidad = 0; // Poner 0 internamente
+      newItems[index].cantidad = 0;
       setVentaItems(newItems);
       return;
     }
 
     const numericValue = parseInt(value);
     if (isNaN(numericValue) || numericValue < 1) {
-      return; // No actualizar si no es un número válido
+      return;
     }
 
     const item = ventaItems[index];
@@ -374,7 +446,6 @@ export function VenderView() {
   };
 
   const handleCantidadInputBlur = (index: number, value: string) => {
-    // Cuando pierde el foco, si está vacío o es 0, volver a 1
     if (value === "" || parseInt(value) === 0) {
       const newItems = [...ventaItems];
       newItems[index].cantidad = 1;
@@ -395,7 +466,6 @@ export function VenderView() {
   const cambio =
     metodoPago === "Efectivo" ? Math.max(0, montoPagado - total) : 0;
 
-  // Verificar si hay algún item con cantidad 0
   const tieneItemsInvalidos = ventaItems.some((item) => item.cantidad < 1);
 
   const procesarVenta = async () => {
@@ -488,7 +558,6 @@ export function VenderView() {
 
       await loadCashStatus();
 
-      // Mantener el foco después de procesar la venta
       setTimeout(() => {
         if (searchInputRef.current) {
           searchInputRef.current.focus();
@@ -506,59 +575,29 @@ export function VenderView() {
     }
   };
 
-  // Función para obtener la URL de la imagen
-  const getImageUrl = (imagen: any) => {
-    if (!imagen) return null;
-
-    // Si es string
-    if (typeof imagen === "string") {
-      // Si ya es una URL completa o data URL
-      if (imagen.startsWith("http") || imagen.startsWith("data:image")) {
-        return imagen;
-      }
-      // Si es base64 sin el prefijo
-      if (imagen.length > 0) {
-        return `data:image/jpeg;base64,${imagen}`;
-      }
-      return null;
-    }
-
-    // Si es Buffer o ArrayBuffer
-    if (imagen.data && Array.isArray(imagen.data)) {
-      // Convertir array de bytes a base64
-      const uint8Array = new Uint8Array(imagen.data);
-      let binary = "";
-      for (let i = 0; i < uint8Array.length; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
-      }
-      const base64 = btoa(binary);
-      return `data:image/jpeg;base64,${base64}`;
-    }
-
-    // Si es otro tipo de objeto
-    if (typeof imagen === "object" && imagen !== null) {
-      try {
-        const jsonString = JSON.stringify(imagen);
-        return `data:image/jpeg;base64,${btoa(jsonString)}`;
-      } catch (e) {
-        console.error("Error converting image object:", e);
-        return null;
-      }
-    }
-
-    return null;
-  };
+  const currentDate = new Date().toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-6">
-      {/* Mensaje de Bienvenida */}
       <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-        <h2 className="text-2xl font-bold text-primary">
-          ¡Bienvenido, {username}!
-        </h2>
-        <p className="text-muted-foreground">
-          Sistema de punto de venta NEOLED
-        </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-primary">
+              ¡Bienvenido, {username}!
+            </h2>
+            <p className="text-muted-foreground">
+              Sistema de punto de venta NEOLED
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Fecha</p>
+            <p className="font-medium">{currentDate}</p>
+          </div>
+        </div>
         <div className="mt-2">
           <Badge variant={cajaAbierta ? "default" : "destructive"}>
             Caja: {cajaAbierta ? "Abierta" : "Cerrada"}
@@ -572,7 +611,6 @@ export function VenderView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Panel de Búsqueda y Productos */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Buscar Productos</CardTitle>
@@ -586,7 +624,6 @@ export function VenderView() {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onKeyDown={handleSearchKeyDown}
-                onFocus={handleSearchFocus}
                 className="pl-10"
                 disabled={loading}
                 autoFocus={true}
@@ -601,72 +638,194 @@ export function VenderView() {
 
             {!loading && searchResults.length > 0 && (
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {searchResults.map((product) => (
-                  <div
-                    key={product.idproducto}
-                    className="border rounded-lg p-4 space-y-3"
-                  >
+                {searchResults.map((product) => {
+                  const hasSimilares =
+                    product.productos_similares &&
+                    product.productos_similares.length > 0;
+                  const isExpanded = expandedProduct === product.idproducto;
+                  const similarProducts =
+                    similarProductsData.get(product.idproducto) || [];
+                  const isLoadingSimilars =
+                    loadingSimilars.get(product.idproducto) || false;
+
+                  return (
                     <div
-                      className="flex items-center justify-between cursor-pointer"
-                      onClick={() => toggleProductExpansion(product.idproducto)}
+                      key={product.idproducto}
+                      className="border rounded-lg p-4 space-y-3"
                     >
-                      <div className="flex items-start gap-3 flex-1">
-                        {(() => {
-                          const imageUrl = getImageUrl(product.imagen);
-                          return imageUrl ? (
-                            <img
-                              src={imageUrl}
-                              alt={product.nombre}
-                              className="w-16 h-16 rounded-md object-cover"
-                              onError={(e) => {
-                                console.error(
-                                  "Error loading image for product:",
-                                  product.nombre,
-                                );
-                                e.currentTarget.style.display = "none";
-                              }}
-                            />
-                          ) : (
-                            <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">
-                                Sin imagen
-                              </span>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          {(() => {
+                            const imageUrl = getImageUrl(product.imagen);
+                            return imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={product.nombre}
+                                className="w-16 h-16 rounded-md object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center">
+                                <span className="text-xs text-muted-foreground">
+                                  Sin imagen
+                                </span>
+                              </div>
+                            );
+                          })()}
+                          <div className="flex-1 min-w-0">
+                            <h4
+                              className={`font-semibold text-sm ${isMobile ? "break-words" : ""}`}
+                            >
+                              {product.nombre}
+                            </h4>
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {product.descripcion}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <Badge variant="outline" className="text-xs">
+                                {product.nombre_ubicacion}
+                              </Badge>
                             </div>
-                          );
-                        })()}
-                        <div className="flex-1 min-w-0">
-                          <h4
-                            className={`font-semibold text-sm ${isMobile ? "break-words" : ""}`}
-                          >
-                            {product.nombre}
-                          </h4>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {product.descripcion}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <Badge variant="outline" className="text-xs">
-                              {product.nombre_ubicacion}
-                            </Badge>
+                            <p className="text-xs font-medium">
+                              Bs {formatBs(product.precio_venta)} | Stock:{" "}
+                              {product.stock}
+                            </p>
                           </div>
-                          <p className="text-xs font-medium">
-                            Bs {formatBs(product.precio_venta)} | Stock:{" "}
-                            {product.stock}
-                          </p>
                         </div>
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            agregarProducto(product);
+                          }}
+                          disabled={product.stock === 0}
+                          className="ml-2 flex-shrink-0"
+                        >
+                          {product.stock === 0 ? "Sin Stock" : "Agregar"}
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          agregarProducto(product);
-                        }}
-                        disabled={product.stock === 0}
-                      >
-                        {product.stock === 0 ? "Sin Stock" : "Agregar"}
-                      </Button>
+
+                      {/* Botón de "v" en la parte inferior derecha */}
+                      {hasSimilares && (
+                        <div className="flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              toggleProductExpansion(product.idproducto)
+                            }
+                            className="h-7 px-2 text-xs"
+                          >
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp className="h-3 w-3 mr-1" /> Ver menos
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="h-3 w-3 mr-1" /> Ver
+                                similares ({product.productos_similares!.length}
+                                )
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Productos similares */}
+                      {hasSimilares && isExpanded && (
+                        <div className="pl-4 border-l-2 border-primary/30 space-y-2 mt-2">
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Productos similares:
+                          </p>
+                          {isLoadingSimilars ? (
+                            <div className="text-center py-4">
+                              <p className="text-xs text-muted-foreground">
+                                Cargando productos similares...
+                              </p>
+                            </div>
+                          ) : similarProducts.length > 0 ? (
+                            similarProducts.map((similar) => (
+                              <div
+                                key={similar.idproducto}
+                                className="bg-muted/30 rounded-lg p-3"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-3 flex-1">
+                                    {(() => {
+                                      const imageUrl = getImageUrl(
+                                        similar.imagen,
+                                      );
+                                      return imageUrl ? (
+                                        <img
+                                          src={imageUrl}
+                                          alt={similar.nombre}
+                                          className="w-12 h-12 rounded-md object-cover"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display =
+                                              "none";
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="w-12 h-12 rounded-md bg-muted flex items-center justify-center">
+                                          <span className="text-xs text-muted-foreground">
+                                            Sin img
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">
+                                        {similar.nombre}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground line-clamp-1">
+                                        {similar.descripcion?.substring(0, 60)}
+                                        ...
+                                      </p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs"
+                                        >
+                                          {similar.nombre_ubicacion}
+                                        </Badge>
+                                      </div>
+                                      <p className="text-xs font-medium mt-1">
+                                        Bs {formatBs(similar.precio_venta)} |
+                                        Stock: {similar.stock}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      agregarProducto(similar);
+                                    }}
+                                    disabled={similar.stock === 0}
+                                    className="ml-2 flex-shrink-0 h-8"
+                                  >
+                                    {similar.stock === 0
+                                      ? "Sin Stock"
+                                      : "Agregar"}
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-xs text-muted-foreground">
+                                No se pudieron cargar los productos similares
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -682,7 +841,6 @@ export function VenderView() {
           </CardContent>
         </Card>
 
-        {/* Panel de Venta */}
         <Card className="lg:col-span-1" ref={cartRef}>
           <CardHeader>
             <CardTitle>Detalle de Venta</CardTitle>
@@ -699,7 +857,6 @@ export function VenderView() {
                     key={item.idproducto}
                     className="border rounded-lg p-3 bg-card"
                   >
-                    {/* Primera fila: Información del producto */}
                     <div className="flex items-start gap-3 mb-3">
                       {(() => {
                         const imageUrl = getImageUrl(item.imagen);
@@ -709,10 +866,6 @@ export function VenderView() {
                             alt={item.nombre}
                             className="w-12 h-12 rounded object-cover flex-shrink-0"
                             onError={(e) => {
-                              console.error(
-                                "Error loading image for cart item:",
-                                item.nombre,
-                              );
                               e.currentTarget.style.display = "none";
                             }}
                           />
@@ -734,7 +887,6 @@ export function VenderView() {
                       </div>
                     </div>
 
-                    {/* Segunda fila: Controles y total */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Button
@@ -793,7 +945,6 @@ export function VenderView() {
               </div>
             )}
 
-            {/* Totales */}
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Subtotal:</span>
@@ -829,7 +980,6 @@ export function VenderView() {
               </div>
             </div>
 
-            {/* Método de Pago */}
             <div className="space-y-3">
               <Label>Método de Pago:</Label>
               <RadioGroup
@@ -885,7 +1035,6 @@ export function VenderView() {
                       className="w-full h-full object-contain rounded-lg"
                     />
                   </div>
-
                   <p className="text-xs text-muted-foreground mt-2">
                     Escanea el código QR para pagar
                   </p>

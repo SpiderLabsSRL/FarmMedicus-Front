@@ -1,5 +1,4 @@
 import axios from "axios";
-import { procesarPago } from "./PagosPendientesApi";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Interfaces para las tablas maestras
@@ -28,6 +27,11 @@ interface BackendProducto {
   precio_compra: string;
   stock: number;
   stock_minimo: number;
+  codigo_barras: string | null;
+  productos_similares: Array<{
+    idproducto: number;
+    nombre: string;
+  }>;
 }
 
 export interface Producto {
@@ -44,6 +48,11 @@ export interface Producto {
   precio_compra: string;
   stock: number;
   stock_minimo: number;
+  codigo_barras: string | null;
+  productos_similares: Array<{
+    idproducto: number;
+    nombre: string;
+  }>;
 }
 
 export interface ProductoRequest {
@@ -51,10 +60,13 @@ export interface ProductoRequest {
   descripcion: string;
   idubicacion: number;
   categorias: number[];
-  imagen: string;
+  imagen?: File | string | null;
   precio_venta: string;
   precio_compra: string;
   stock: number;
+  stock_minimo?: number;
+  codigo_barras?: string | null;
+  productos_similares?: number[];
 }
 
 const api = axios.create({
@@ -84,13 +96,28 @@ export const getCategorias = async (): Promise<BackendCategoria[]> => {
     throw new Error("No se pudieron cargar las categorías");
   }
 };
+
+export const getTodosProductosParaSelect = async (): Promise<
+  { idproducto: number; nombre: string }[]
+> => {
+  try {
+    const response = await api.get("/todos-select");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching productos para select:", error);
+    return [];
+  }
+};
+
 export const buscarProductos = async (termino: string): Promise<Producto[]> => {
   try {
     if (!termino || termino.trim().length < 2) {
       return [];
     }
-    
-    const response = await api.get<BackendProducto[]>(`/buscar?termino=${encodeURIComponent(termino.trim())}`);
+
+    const response = await api.get<BackendProducto[]>(
+      `/buscar?termino=${encodeURIComponent(termino.trim())}`,
+    );
     return response.data.map(mapBackendProducto);
   } catch (error) {
     console.error("Error buscando productos:", error);
@@ -110,7 +137,9 @@ export const getAllProductos = async (): Promise<Producto[]> => {
 };
 
 // Función original getProductos
-export const getProductos = async (searchTerm?: string): Promise<Producto[]> => {
+export const getProductos = async (
+  searchTerm?: string,
+): Promise<Producto[]> => {
   try {
     if (searchTerm && searchTerm.trim().length >= 2) {
       return buscarProductos(searchTerm);
@@ -132,28 +161,14 @@ export const getProductoById = async (id: number): Promise<Producto> => {
   }
 };
 
-export const createProducto = async (producto: ProductoRequest): Promise<Producto> => {
+export const createProducto = async (formData: FormData): Promise<Producto> => {
   try {
-    const formData = new FormData();
-    
-    // Datos básicos del producto
-    formData.append('nombre', producto.nombre);
-    formData.append('descripcion', producto.descripcion);
-    formData.append('idubicacion', producto.idubicacion.toString());
-    formData.append('categorias', JSON.stringify(producto.categorias));
-    if (producto.imagen) {
-      formData.append('imagen', producto.imagen);
-    }
-    formData.append('precio_compra', producto.precio_compra);
-    formData.append('precio_venta', producto.precio_venta);
-    formData.append('stock', producto.stock.toString());
-
     const response = await api.post<BackendProducto>("/productos", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
-    
+
     return mapBackendProducto(response.data);
   } catch (error) {
     console.error("Error creating producto:", error);
@@ -161,27 +176,21 @@ export const createProducto = async (producto: ProductoRequest): Promise<Product
   }
 };
 
-export const updateProducto = async (id: number, producto: ProductoRequest): Promise<Producto> => {
+export const updateProducto = async (
+  id: number,
+  formData: FormData,
+): Promise<Producto> => {
   try {
-    const formData = new FormData();
-    
-    formData.append('nombre', producto.nombre);
-    formData.append('descripcion', producto.descripcion);
-    formData.append('idubicacion', producto.idubicacion.toString());
-    formData.append('categorias', JSON.stringify(producto.categorias));
-    if (producto.imagen) {
-      formData.append('imagen', producto.imagen);
-    }
-    formData.append('precio_compra', producto.precio_compra);
-    formData.append('precio_venta', producto.precio_venta);
-    formData.append('stock', producto.stock.toString());
-
-    const response = await api.put<BackendProducto>(`/productos/${id}`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
+    const response = await api.put<BackendProducto>(
+      `/productos/${id}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       },
-    });
-    
+    );
+
     return mapBackendProducto(response.data);
   } catch (error) {
     console.error("Error updating producto:", error);
@@ -198,11 +207,17 @@ export const deleteProducto = async (id: number): Promise<void> => {
   }
 };
 
-export const updateStockProducto = async (idproducto: number, cantidad: number): Promise<Producto> => {
+export const updateStockProducto = async (
+  idproducto: number,
+  cantidad: number,
+): Promise<Producto> => {
   try {
-    const response = await api.patch<BackendProducto>(`/productos/${idproducto}/stock`, {
-      cantidad
-    });
+    const response = await api.patch<BackendProducto>(
+      `/productos/${idproducto}/stock`,
+      {
+        cantidad,
+      },
+    );
     return mapBackendProducto(response.data);
   } catch (error) {
     console.error("Error updating stock:", error);
@@ -225,6 +240,8 @@ function mapBackendProducto(producto: BackendProducto): Producto {
     precio_venta: producto.precio_venta,
     precio_compra: producto.precio_compra,
     stock: producto.stock,
-    stock_minimo: producto.stock_minimo
+    stock_minimo: producto.stock_minimo,
+    codigo_barras: producto.codigo_barras,
+    productos_similares: producto.productos_similares || [],
   };
 }

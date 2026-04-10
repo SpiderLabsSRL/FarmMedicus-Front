@@ -12,6 +12,10 @@ export interface BackendProduct {
   imagen: string;
   precio_venta: string;
   stock: number;
+  productos_similares?: Array<{
+    idproducto: number;
+    nombre: string;
+  }>;
 }
 
 interface BackendCashStatus {
@@ -34,6 +38,10 @@ export interface Product {
   imagen: string;
   precio_venta: number;
   stock: number;
+  productos_similares?: Array<{
+    idproducto: number;
+    nombre: string;
+  }>;
 }
 
 export interface SaleItem {
@@ -71,20 +79,27 @@ const api = axios.create({
   },
 });
 
-export const searchProducts = async (query: string, withoutStock: boolean = true): Promise<Product[]> => {
+export const searchProducts = async (
+  query: string,
+  withoutStock: boolean = true,
+): Promise<Product[]> => {
   try {
-    const response = await api.get<BackendProduct[]>(`/sales/products/search?q=${encodeURIComponent(query)}&withoutStock=${encodeURIComponent(withoutStock)}`);
+    const response = await api.get<BackendProduct[]>(
+      `/sales/products/search?q=${encodeURIComponent(query)}&withoutStock=${encodeURIComponent(withoutStock)}`,
+    );
     return response.data.map(mapBackendProduct);
   } catch (error) {
     console.error("Error searching products:", error);
-    
+
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 500) {
         console.error("Server error details:", error.response.data);
-        throw new Error("Error del servidor al buscar productos. Por favor, intente nuevamente.");
+        throw new Error(
+          "Error del servidor al buscar productos. Por favor, intente nuevamente.",
+        );
       }
     }
-    
+
     throw new Error("No se pudieron buscar los productos");
   }
 };
@@ -99,14 +114,20 @@ export const getCashStatus = async (): Promise<CashStatus> => {
   }
 };
 
-export const processSale = async (sale: SaleRequest, userId: number): Promise<{idventa: number}> => {
+export const processSale = async (
+  sale: SaleRequest,
+  userId: number,
+): Promise<{ idventa: number }> => {
   try {
     const saleWithUser = {
       ...sale,
-      userId: userId
+      userId: userId,
     };
-    
-    const response = await api.post<{idventa: number}>("/sales/process", saleWithUser);
+
+    const response = await api.post<{ idventa: number }>(
+      "/sales/process",
+      saleWithUser,
+    );
     return response.data;
   } catch (error) {
     console.error("Error processing sale:", error);
@@ -124,7 +145,8 @@ export function mapBackendProduct(product: BackendProduct): Product {
     nombre_ubicacion: product.nombre_ubicacion,
     imagen: product.imagen,
     precio_venta: parseFloat(product.precio_venta),
-    stock: product.stock
+    stock: product.stock,
+    productos_similares: product.productos_similares || [],
   };
 }
 
@@ -136,6 +158,6 @@ function mapBackendCashStatus(cashStatus: BackendCashStatus): CashStatus {
     monto_final: parseFloat(cashStatus.monto_final),
     idusuario: cashStatus.idusuario,
     fecha_apertura: cashStatus.fecha_apertura,
-    fecha_cierre: cashStatus.fecha_cierre
+    fecha_cierre: cashStatus.fecha_cierre,
   };
 }

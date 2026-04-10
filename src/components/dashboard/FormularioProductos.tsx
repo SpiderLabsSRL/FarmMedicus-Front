@@ -3,21 +3,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, X } from "lucide-react";
+import { Plus, Edit, Trash2, X, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddItemDialog } from "./AddItemDialog";
 import {
   createUbicacion,
   createCategoria,
   getUbicaciones,
-  getCategorias
+  getCategorias,
 } from "@/api/ManagementSectionApi";
 import {
   createProducto,
-  updateProducto
-} from "@/api/FormularioProductoApi";
+  updateProducto,
+  getTodosProductosParaSelect,
+} from "@/api/ProductsApi";
 
 interface ProductFormData {
   id?: string;
@@ -31,6 +42,9 @@ interface ProductFormData {
   stockMinimo?: number;
   imagen?: string;
   imagenFile?: File | string | string[];
+  codigoBarras?: string;
+  productosSimilares?: number[];
+  productosSimilaresData?: Array<{ idproducto: number; nombre: string }>;
 }
 
 interface FormularioProductosProps {
@@ -44,7 +58,7 @@ interface FormularioProductosProps {
 
 interface AddDialogState {
   open: boolean;
-  type: 'categoria' | 'ubicacion' | null;
+  type: "categoria" | "ubicacion" | null;
 }
 
 interface ManagementItem {
@@ -62,13 +76,21 @@ interface SearchSelectProps {
   required?: boolean;
 }
 
-const SearchSelect = ({ options, selectedValues, onSelectionChange, placeholder, label, required }: SearchSelectProps) => {
+const SearchSelect = ({
+  options,
+  selectedValues,
+  onSelectionChange,
+  placeholder,
+  label,
+  required,
+}: SearchSelectProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
-  const filteredOptions = options.filter(option =>
-    option.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    !selectedValues.includes(option)
+  const filteredOptions = options.filter(
+    (option) =>
+      option.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !selectedValues.includes(option),
   );
 
   const addSelection = (option: string) => {
@@ -78,12 +100,14 @@ const SearchSelect = ({ options, selectedValues, onSelectionChange, placeholder,
   };
 
   const removeSelection = (option: string) => {
-    onSelectionChange(selectedValues.filter(v => v !== option));
+    onSelectionChange(selectedValues.filter((v) => v !== option));
   };
 
   return (
     <div className="space-y-2">
-      <Label>{label} {required && <span className="text-red-500">*</span>}</Label>
+      <Label>
+        {label} {required && <span className="text-red-500">*</span>}
+      </Label>
       <div className="relative">
         <Input
           value={searchTerm}
@@ -97,7 +121,7 @@ const SearchSelect = ({ options, selectedValues, onSelectionChange, placeholder,
         />
         {isOpen && filteredOptions.length > 0 && (
           <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
-            {filteredOptions.map(option => (
+            {filteredOptions.map((option) => (
               <button
                 key={option}
                 type="button"
@@ -112,8 +136,12 @@ const SearchSelect = ({ options, selectedValues, onSelectionChange, placeholder,
       </div>
       {selectedValues.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {selectedValues.map(value => (
-            <Badge key={value} variant="secondary" className="flex items-center gap-1">
+          {selectedValues.map((value) => (
+            <Badge
+              key={value}
+              variant="secondary"
+              className="flex items-center gap-1"
+            >
               {value}
               <button
                 type="button"
@@ -130,22 +158,120 @@ const SearchSelect = ({ options, selectedValues, onSelectionChange, placeholder,
   );
 };
 
-const base64ToFile = (base64String, fileName = 'imagen.jpg') => {
-  const [metadata, data] = base64String.split(',');
+interface ProductoSelect {
+  idproducto: number;
+  nombre: string;
+}
+
+const ProductoSimilarSelect = ({
+  productosDisponibles,
+  selectedValues,
+  onSelectionChange,
+  currentProductId,
+}: {
+  productosDisponibles: ProductoSelect[];
+  selectedValues: number[];
+  onSelectionChange: (values: number[]) => void;
+  currentProductId?: number;
+}) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filteredOptions = productosDisponibles.filter(
+    (producto) =>
+      producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !selectedValues.includes(producto.idproducto) &&
+      producto.idproducto !== currentProductId,
+  );
+
+  const addSelection = (producto: ProductoSelect) => {
+    onSelectionChange([...selectedValues, producto.idproducto]);
+    setSearchTerm("");
+    setIsOpen(false);
+  };
+
+  const removeSelection = (productoId: number) => {
+    onSelectionChange(selectedValues.filter((v) => v !== productoId));
+  };
+
+  const getProductoNombre = (id: number) => {
+    const producto = productosDisponibles.find((p) => p.idproducto === id);
+    return producto ? producto.nombre : `Producto ${id}`;
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label>Productos Similares</Label>
+      <div className="relative">
+        <div className="flex">
+          <Input
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setIsOpen(true);
+            }}
+            onFocus={() => setIsOpen(true)}
+            onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+            placeholder="Buscar productos similares..."
+            className="flex-1"
+          />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        </div>
+        {isOpen && filteredOptions.length > 0 && (
+          <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+            {filteredOptions.map((producto) => (
+              <button
+                key={producto.idproducto}
+                type="button"
+                className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground"
+                onMouseDown={() => addSelection(producto)}
+              >
+                {producto.nombre}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {selectedValues.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selectedValues.map((id) => (
+            <Badge
+              key={id}
+              variant="secondary"
+              className="flex items-center gap-1"
+            >
+              {getProductoNombre(id)}
+              <button
+                type="button"
+                onClick={() => removeSelection(id)}
+                className="ml-1 hover:text-destructive"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const base64ToFile = (base64String, fileName = "imagen.jpg") => {
+  const [metadata, data] = base64String.split(",");
   const mime = metadata.match(/:(.*?);/)[1];
-  
+
   const byteCharacters = atob(data);
   const byteArrays = [];
-  
+
   for (let i = 0; i < byteCharacters.length; i++) {
     byteArrays.push(byteCharacters.charCodeAt(i));
   }
-  
+
   const byteArray = new Uint8Array(byteArrays);
   const blob = new Blob([byteArray], { type: mime });
-  
+
   return new File([blob], fileName, { type: mime });
-}
+};
 
 export function FormularioProductos({
   product,
@@ -153,7 +279,7 @@ export function FormularioProductos({
   categorias,
   onSubmit,
   onCancel,
-  onRefreshData
+  onRefreshData,
 }: FormularioProductosProps) {
   const [formData, setFormData] = useState<ProductFormData>(() => {
     if (product) {
@@ -167,10 +293,14 @@ export function FormularioProductos({
         precioCompra: product.precio_compra?.toString() || "0",
         stock: product.stock || 0,
         stockMinimo: product.stock_minimo || 0,
-        imagen: product.imagen || '',
-        imagenFile: product.imagen 
-          ? base64ToFile(product.imagen, 'producto.jpg') 
-          : null
+        imagen: product.imagen || "",
+        imagenFile: product.imagen
+          ? base64ToFile(product.imagen, "producto.jpg")
+          : null,
+        codigoBarras: product.codigo_barras || "",
+        productosSimilares:
+          product.productos_similares?.map((p: any) => p.idproducto) || [],
+        productosSimilaresData: product.productos_similares || [],
       };
     }
     return {
@@ -182,16 +312,24 @@ export function FormularioProductos({
       precioCompra: "0",
       stock: 0,
       stockMinimo: 0,
-      imagen: '',
+      imagen: "",
       imagenFile: null,
+      codigoBarras: "",
+      productosSimilares: [],
+      productosSimilaresData: [],
     };
   });
 
-  const [addDialogState, setAddDialogState] = useState<AddDialogState>({ open: false, type: null });
+  const [addDialogState, setAddDialogState] = useState<AddDialogState>({
+    open: false,
+    type: null,
+  });
+  const [todosProductos, setTodosProductos] = useState<ProductoSelect[]>([]);
+  const [loadingProductos, setLoadingProductos] = useState(false);
 
   const [localLists, setLocalLists] = useState({
     ubicaciones: ubicaciones,
-    categorias: categorias
+    categorias: categorias,
   });
 
   const [managementItems, setManagementItems] = useState<{
@@ -208,29 +346,41 @@ export function FormularioProductos({
 
   const { toast } = useToast();
 
+  // Cargar todos los productos para el selector de similares
+  useEffect(() => {
+    const loadTodosProductos = async () => {
+      setLoadingProductos(true);
+      try {
+        const productos = await getTodosProductosParaSelect();
+        setTodosProductos(productos);
+      } catch (error) {
+        console.error("Error cargando productos para similares:", error);
+      } finally {
+        setLoadingProductos(false);
+      }
+    };
+    loadTodosProductos();
+  }, []);
+
   // Cargar los elementos de gestión al montar el componente
   useEffect(() => {
     const loadManagementItems = async () => {
       try {
-        const [
-          ubicacionesData,
-          categoriasData
-        ] = await Promise.all([
+        const [ubicacionesData, categoriasData] = await Promise.all([
           getUbicaciones(),
-          getCategorias()
+          getCategorias(),
         ]);
 
         setManagementItems({
           ubicaciones: ubicacionesData,
-          categorias: categoriasData
+          categorias: categoriasData,
         });
 
         // Actualizar las listas locales con los datos frescos del backend
         setLocalLists({
-          ubicaciones: ubicacionesData.map(item => item.nombre),
-          categorias: categoriasData.map(item => item.nombre)
+          ubicaciones: ubicacionesData.map((item) => item.nombre),
+          categorias: categoriasData.map((item) => item.nombre),
         });
-
       } catch (error) {
         console.error("Error cargando elementos de gestión:", error);
       }
@@ -243,42 +393,45 @@ export function FormularioProductos({
   useEffect(() => {
     setLocalLists({
       ubicaciones: ubicaciones,
-      categorias: categorias
+      categorias: categorias,
     });
   }, [ubicaciones, categorias]);
 
-  const handleInputChange = (field: keyof ProductFormData, value: string | string[] | File) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (
+    field: keyof ProductFormData,
+    value: string | string[] | File | number | number[],
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   // Función MEJORADA para formatear la descripción que funciona en producción
   const formatDescriptionForProduction = (description: string): string => {
     if (!description) return "";
-    
+
     // Para producción: normalizar todos los tipos de saltos de línea
     return description
-      .replace(/\r\n/g, '\n')  // Windows a Unix
-      .replace(/\r/g, '\n')    // Mac antiguo a Unix
-      .replace(/\n+/g, '\n')   // Múltiples saltos a uno solo
-      .replace(/[ ]+/g, ' ')   // Múltiples espacios a uno solo
+      .replace(/\r\n/g, "\n") // Windows a Unix
+      .replace(/\r/g, "\n") // Mac antiguo a Unix
+      .replace(/\n+/g, "\n") // Múltiples saltos a uno solo
+      .replace(/[ ]+/g, " ") // Múltiples espacios a uno solo
       .trim();
   };
 
   const getItemIdByName = (items: ManagementItem[], name: string): number => {
-    const item = items.find(item => item.nombre === name);
+    const item = items.find((item) => item.nombre === name);
     return item?.id || 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmittingProduct) return;
-    
+
     if (!formData.nombre.trim()) {
       toast({
         title: "Error",
         description: "El nombre del producto es obligatorio",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -287,7 +440,7 @@ export function FormularioProductos({
       toast({
         title: "Error",
         description: "La ubicación es obligatoria",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -296,7 +449,7 @@ export function FormularioProductos({
       toast({
         title: "Error",
         description: "Debe seleccionar al menos una categoría",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -305,7 +458,7 @@ export function FormularioProductos({
       toast({
         title: "Error",
         description: "El precio de venta es obligatorio",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -314,7 +467,7 @@ export function FormularioProductos({
       toast({
         title: "Error",
         description: "La descripción es obligatoria",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -322,48 +475,66 @@ export function FormularioProductos({
     setIsSubmittingProduct(true);
 
     try {
-      const idubicacion = getItemIdByName(managementItems.ubicaciones, formData.ubicacion);
-      
+      const idubicacion = getItemIdByName(
+        managementItems.ubicaciones,
+        formData.ubicacion,
+      );
+
       if (idubicacion === 0) {
         toast({
           title: "Error",
           description: "La ubicación seleccionada no es válida",
-          variant: "destructive"
+          variant: "destructive",
         });
         setIsSubmittingProduct(false);
         return;
       }
 
-      const descripcionFormateada = formatDescriptionForProduction(formData.descripcion);
-      // Preparar datos para el backend
-      console.log(formData.imagenFile)
-      const productoRequest = {
-        nombre: formData.nombre,
-        descripcion: descripcionFormateada,
-        idubicacion: idubicacion,
-        categorias: formData.categorias.map(cat => getItemIdByName(managementItems.categorias, cat)),
-        precio_venta: parseFloat(formData.precioVenta|| "0") || 0,
-        precio_compra: parseFloat(formData.precioCompra || "0") || 0,
-        stock: formData.stock || 0,
-        stock_minimo: formData.stockMinimo || 0,
-        imagen: formData.imagenFile instanceof File ? formData.imagenFile : null
-      };
+      const descripcionFormateada = formatDescriptionForProduction(
+        formData.descripcion,
+      );
 
       const formDataToSend = new FormData();
-      
-      formDataToSend.append('nombre', productoRequest.nombre);
-      formDataToSend.append('descripcion', productoRequest.descripcion);
-      formDataToSend.append('idubicacion', productoRequest.idubicacion.toString());
-      formDataToSend.append('categorias', JSON.stringify(productoRequest.categorias));
-      formDataToSend.append('precio_venta', productoRequest.precio_venta.toString());
-      formDataToSend.append('precio_compra', productoRequest.precio_compra.toString());
-      formDataToSend.append('stock', productoRequest.stock.toString());
-      formDataToSend.append('stock_minimo', productoRequest.stock_minimo.toString())
-      
-      if (productoRequest.imagen) {
-        formDataToSend.append('imagen', productoRequest.imagen);
+
+      formDataToSend.append("nombre", formData.nombre);
+      formDataToSend.append("descripcion", descripcionFormateada);
+      formDataToSend.append("idubicacion", idubicacion.toString());
+      formDataToSend.append(
+        "categorias",
+        JSON.stringify(
+          formData.categorias.map((cat) =>
+            getItemIdByName(managementItems.categorias, cat),
+          ),
+        ),
+      );
+      formDataToSend.append("precio_venta", formData.precioVenta.toString());
+      formDataToSend.append(
+        "precio_compra",
+        (formData.precioCompra || "0").toString(),
+      );
+      formDataToSend.append("stock", formData.stock.toString());
+      formDataToSend.append(
+        "stock_minimo",
+        (formData.stockMinimo || 0).toString(),
+      );
+
+      if (formData.codigoBarras && formData.codigoBarras.trim()) {
+        formDataToSend.append("codigo_barras", formData.codigoBarras.trim());
       }
 
+      if (
+        formData.productosSimilares &&
+        formData.productosSimilares.length > 0
+      ) {
+        formDataToSend.append(
+          "productos_similares",
+          JSON.stringify(formData.productosSimilares),
+        );
+      }
+
+      if (formData.imagenFile instanceof File) {
+        formDataToSend.append("imagen", formData.imagenFile);
+      }
 
       if (product && formData.id) {
         await updateProducto(parseInt(formData.id), formDataToSend);
@@ -384,37 +555,44 @@ export function FormularioProductos({
       console.error("Error al guardar el producto:", error);
       toast({
         title: "Error",
-        description: error.message || "No se pudo guardar el producto. Por favor, intenta nuevamente.",
-        variant: "destructive"
+        description:
+          error.message ||
+          "No se pudo guardar el producto. Por favor, intenta nuevamente.",
+        variant: "destructive",
       });
     } finally {
       setIsSubmittingProduct(false);
     }
   };
 
-  const openAddDialog = (type: 'categoria' | 'ubicacion') => {
+  const openAddDialog = (type: "categoria" | "ubicacion") => {
     setAddDialogState({ open: true, type });
   };
 
   const updateLocalList = async (type: string) => {
     try {
       let newData: ManagementItem[] = [];
-      
+
       switch (type) {
-        case 'ubicacion':
+        case "ubicacion":
           newData = await getUbicaciones();
-          setManagementItems(prev => ({ ...prev, ubicaciones: newData }));
-          setLocalLists(prev => ({ ...prev, ubicaciones: newData.map(item => item.nombre) }));
+          setManagementItems((prev) => ({ ...prev, ubicaciones: newData }));
+          setLocalLists((prev) => ({
+            ...prev,
+            ubicaciones: newData.map((item) => item.nombre),
+          }));
           break;
-        case 'categoria':
+        case "categoria":
           newData = await getCategorias();
-          setManagementItems(prev => ({ ...prev, categorias: newData }));
-          setLocalLists(prev => ({ ...prev, categorias: newData.map(item => item.nombre) }));
+          setManagementItems((prev) => ({ ...prev, categorias: newData }));
+          setLocalLists((prev) => ({
+            ...prev,
+            categorias: newData.map((item) => item.nombre),
+          }));
           break;
         default:
           return;
       }
-
     } catch (error) {
       console.error(`Error actualizando lista ${type}:`, error);
     }
@@ -422,7 +600,7 @@ export function FormularioProductos({
 
   const handleAddNewElement = async (name: string) => {
     if (isAddingElement) return; // Prevenir doble clic
-    
+
     const type = addDialogState.type;
     if (!type) return;
 
@@ -430,10 +608,10 @@ export function FormularioProductos({
 
     try {
       switch (type) {
-        case 'categoria':
+        case "categoria":
           await createCategoria({ nombre: name });
           break;
-        case 'ubicacion':
+        case "ubicacion":
           await createUbicacion({ nombre: name });
           break;
       }
@@ -451,13 +629,12 @@ export function FormularioProductos({
       }
 
       setAddDialogState({ open: false, type: null });
-
     } catch (error) {
       console.error(`Error agregando ${type}:`, error);
       toast({
         title: "Error",
         description: `No se pudo agregar el ${type}`,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsAddingElement(false);
@@ -466,40 +643,40 @@ export function FormularioProductos({
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    
+
     if (file) {
-      if (!file.type.startsWith('image/')) {
-          toast({
-              title: "Error",
-              description: "Por favor, selecciona una imagen válida",
-              variant: "destructive"
-          });
-          return;
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Error",
+          description: "Por favor, selecciona una imagen válida",
+          variant: "destructive",
+        });
+        return;
       }
-      
+
       if (file.size > 5 * 1024 * 1024) {
-          toast({
-              title: "Error",
-              description: "La imagen no puede superar los 5MB",
-              variant: "destructive"
-          });
-          return;
+        toast({
+          title: "Error",
+          description: "La imagen no puede superar los 5MB",
+          variant: "destructive",
+        });
+        return;
       }
-      
+
       const previewUrl = URL.createObjectURL(file);
-      
-      handleInputChange("imagen", previewUrl)
-      handleInputChange("imagenFile", file)
-      setFormData(prev => ({ 
-          ...prev, 
-          imagen: previewUrl,
-          imagenFile: file
+
+      handleInputChange("imagen", previewUrl);
+      handleInputChange("imagenFile", file);
+      setFormData((prev) => ({
+        ...prev,
+        imagen: previewUrl,
+        imagenFile: file,
       }));
     }
   };
 
   const removeImage = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       imagen: null,
       imagenFile: null,
@@ -511,7 +688,9 @@ export function FormularioProductos({
       <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre <span className="text-red-500">*</span></Label>
+            <Label htmlFor="nombre">
+              Nombre <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="nombre"
               value={formData.nombre}
@@ -520,7 +699,9 @@ export function FormularioProductos({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="ubicacion">Ubicación <span className="text-red-500">*</span></Label>
+            <Label htmlFor="ubicacion">
+              Ubicación <span className="text-red-500">*</span>
+            </Label>
             <div className="flex gap-2">
               <select
                 value={formData.ubicacion}
@@ -529,15 +710,17 @@ export function FormularioProductos({
                 required
               >
                 <option value="">Seleccionar ubicación</option>
-                {localLists.ubicaciones.map(ubicacion => (
-                  <option key={ubicacion} value={ubicacion}>{ubicacion}</option>
+                {localLists.ubicaciones.map((ubicacion) => (
+                  <option key={ubicacion} value={ubicacion}>
+                    {ubicacion}
+                  </option>
                 ))}
               </select>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button 
-                    type="button" 
-                    size="sm" 
+                  <Button
+                    type="button"
+                    size="sm"
                     variant="outline"
                     className="flex-shrink-0"
                     disabled={isAddingElement}
@@ -549,12 +732,15 @@ export function FormularioProductos({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Confirmar Acción</AlertDialogTitle>
                     <AlertDialogDescription>
-                      ¿Estás seguro de abrir el formulario para agregar una nueva ubicación?
+                      ¿Estás seguro de abrir el formulario para agregar una
+                      nueva ubicación?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => openAddDialog("ubicacion")}>
+                    <AlertDialogAction
+                      onClick={() => openAddDialog("ubicacion")}
+                    >
                       Confirmar
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -564,13 +750,26 @@ export function FormularioProductos({
           </div>
         </div>
 
+        {/* Código de Barras */}
+        <div className="space-y-2">
+          <Label htmlFor="codigoBarras">Código de Barras</Label>
+          <Input
+            id="codigoBarras"
+            value={formData.codigoBarras || ""}
+            onChange={(e) => handleInputChange("codigoBarras", e.target.value)}
+            placeholder="Opcional - Código de barras del producto"
+          />
+        </div>
+
         {/* Categorías */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Categorías <span className="text-red-500">*</span></Label>
-            <Button 
-              type="button" 
-              size="sm" 
+            <Label>
+              Categorías <span className="text-red-500">*</span>
+            </Label>
+            <Button
+              type="button"
+              size="sm"
               variant="outline"
               onClick={() => openAddDialog("categoria")}
               disabled={isAddingElement}
@@ -581,15 +780,19 @@ export function FormularioProductos({
           <SearchSelect
             options={localLists.categorias}
             selectedValues={formData.categorias}
-            onSelectionChange={(values) => handleInputChange("categorias", values)}
+            onSelectionChange={(values) =>
+              handleInputChange("categorias", values)
+            }
             placeholder="Buscar categorías..."
             label=""
           />
         </div>
-        
+
         {/* Descripción */}
         <div className="space-y-2">
-          <Label htmlFor="descripcion">Descripción <span className="text-red-500">*</span></Label>
+          <Label htmlFor="descripcion">
+            Descripción <span className="text-red-500">*</span>
+          </Label>
           <Textarea
             id="descripcion"
             value={formData.descripcion}
@@ -602,10 +805,29 @@ export function FormularioProductos({
             Los saltos de línea se mantendrán en la visualización del producto.
           </div>
         </div>
-        
+
+        {/* Productos Similares */}
+        <div className="space-y-2">
+          <ProductoSimilarSelect
+            productosDisponibles={todosProductos}
+            selectedValues={formData.productosSimilares || []}
+            onSelectionChange={(values) =>
+              handleInputChange("productosSimilares", values)
+            }
+            currentProductId={formData.id ? parseInt(formData.id) : undefined}
+          />
+          {loadingProductos && (
+            <div className="text-xs text-muted-foreground">
+              Cargando productos...
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           <div className="space-y-2">
-            <Label htmlFor="precioVenta">Precio Venta (Bs) <span className="text-red-500">*</span></Label>
+            <Label htmlFor="precioVenta">
+              Precio Venta (Bs) <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="precioVenta"
               type="number"
@@ -624,17 +846,23 @@ export function FormularioProductos({
               type="number"
               step="0.01"
               value={formData.precioCompra}
-              onChange={(e) => handleInputChange("precioCompra", e.target.value)}
+              onChange={(e) =>
+                handleInputChange("precioCompra", e.target.value)
+              }
               className="number-input-no-scroll"
               onWheel={(e) => e.currentTarget.blur()}
             />
           </div>
           <div className="space-y-2">
-            <Label>Stock <span className="text-red-500">*</span></Label>
+            <Label>
+              Stock <span className="text-red-500">*</span>
+            </Label>
             <Input
               type="number"
               value={formData.stock}
-              onChange={(e) => handleInputChange("stock", e.target.value)}
+              onChange={(e) =>
+                handleInputChange("stock", parseInt(e.target.value) || 0)
+              }
               placeholder="0"
               min="0"
               className="number-input-no-scroll"
@@ -647,7 +875,9 @@ export function FormularioProductos({
             <Input
               type="number"
               value={formData.stockMinimo}
-              onChange={(e) => handleInputChange("stockMinimo", e.target.value)}
+              onChange={(e) =>
+                handleInputChange("stockMinimo", parseInt(e.target.value) || 0)
+              }
               placeholder="0"
               min="0"
               className="number-input-no-scroll"
@@ -656,15 +886,10 @@ export function FormularioProductos({
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label>Imagen del producto</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-            />
+            <Input type="file" accept="image/*" onChange={handleImageUpload} />
             <div className="text-xs text-muted-foreground">
-              {formData.imagen && 
-                `Imagen existente. Agregar nueva imagen reemplazará la existente.`
-              }
+              {formData.imagen &&
+                `Imagen existente. Agregar nueva imagen reemplazará la existente.`}
             </div>
           </div>
         </div>
@@ -672,9 +897,9 @@ export function FormularioProductos({
         {formData.imagen && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             <div className="relative">
-              <img 
-                src={formData.imagen} 
-                className="w-full h-20 object-cover rounded border-2 border-green-500" 
+              <img
+                src={formData.imagen}
+                className="w-full h-20 object-cover rounded border-2 border-green-500"
                 alt="Vista previa"
               />
               <Button
@@ -691,10 +916,10 @@ export function FormularioProductos({
         )}
 
         <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onCancel} 
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
             className="w-full sm:w-auto"
             disabled={isSubmittingProduct || isAddingElement}
           >
@@ -702,8 +927,8 @@ export function FormularioProductos({
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
                 disabled={isSubmittingProduct || isAddingElement}
               >
@@ -712,8 +937,10 @@ export function FormularioProductos({
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     {product ? "Actualizando..." : "Agregando..."}
                   </>
+                ) : product ? (
+                  "Actualizar Producto"
                 ) : (
-                  product ? "Actualizar Producto" : "Agregar Producto"
+                  "Agregar Producto"
                 )}
               </Button>
             </AlertDialogTrigger>
@@ -721,15 +948,16 @@ export function FormularioProductos({
               <AlertDialogHeader>
                 <AlertDialogTitle>Confirmar Acción</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {product 
+                  {product
                     ? `¿Estás seguro de actualizar el producto "${formData.nombre}"?`
-                    : `¿Estás seguro de agregar el producto "${formData.nombre}"?`
-                  }
+                    : `¿Estás seguro de agregar el producto "${formData.nombre}"?`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={isSubmittingProduct}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction 
+                <AlertDialogCancel disabled={isSubmittingProduct}>
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction
                   onClick={handleSubmit}
                   disabled={isSubmittingProduct}
                 >
@@ -753,12 +981,18 @@ export function FormularioProductos({
         open={addDialogState.open}
         onOpenChange={(open) => setAddDialogState({ open, type: null })}
         title={`Agregar ${
-          addDialogState.type === 'categoria' ? 'Categoría' :
-          addDialogState.type === 'ubicacion' ? 'Ubicación' : ''
+          addDialogState.type === "categoria"
+            ? "Categoría"
+            : addDialogState.type === "ubicacion"
+              ? "Ubicación"
+              : ""
         }`}
         itemType={
-          addDialogState.type === 'categoria' ? 'categorías' :
-          addDialogState.type === 'ubicacion' ? 'ubicaciones' : ''
+          addDialogState.type === "categoria"
+            ? "categorías"
+            : addDialogState.type === "ubicacion"
+              ? "ubicaciones"
+              : ""
         }
         onAdd={handleAddNewElement}
       />

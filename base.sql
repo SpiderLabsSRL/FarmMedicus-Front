@@ -64,7 +64,8 @@ CREATE TABLE productos (
     precio_venta integer NOT NULL DEFAULT 0,
     precio_compra integer NOT NULL DEFAULT 0,
     stock integer NOT NULL DEFAULT 0,
-    stock_minimo INTEGER NOT NULL DEFAULT 0
+    stock_minimo INTEGER NOT NULL DEFAULT 0,
+    codigo_barras VARCHAR(100) UNIQUE
 );
 
 -- Relación muchos a muchos: Productos - Categorías
@@ -206,7 +207,12 @@ CREATE TABLE notas (
     contenido TEXT NOT NULL,
     fecha DATE NOT NULL DEFAULT CURRENT_DATE
 );
-
+CREATE TABLE productos_similares (
+    idproducto INTEGER REFERENCES productos(idproducto) ON DELETE CASCADE,
+    idproducto_similar INTEGER REFERENCES productos(idproducto) ON DELETE CASCADE,
+    PRIMARY KEY (idproducto, idproducto_similar),
+    CHECK (idproducto != idproducto_similar)
+);
 -- Índices para mejorar rendimiento
 CREATE INDEX idx_ventas_fecha ON ventas(fecha_hora);
 CREATE INDEX idx_ventas_usuario ON ventas(idusuario);
@@ -216,6 +222,9 @@ CREATE INDEX idx_variantes_producto ON variantes(idproducto);
 CREATE INDEX idx_variantes_stock ON variantes(stock);
 CREATE INDEX idx_detalle_ventas_venta ON detalle_ventas(idventa);
 CREATE INDEX idx_detalle_cotizaciones_cotizacion ON detalle_cotizaciones(idcotizacion);
+CREATE INDEX idx_productos_codigo_barras ON productos(codigo_barras);
+CREATE INDEX idx_productos_similares_producto ON productos_similares(idproducto);
+CREATE INDEX idx_productos_similares_similar ON productos_similares(idproducto_similar);
 
 
 
