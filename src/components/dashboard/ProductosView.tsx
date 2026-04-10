@@ -34,7 +34,7 @@ interface ImageCarouselProps {
   className?: string;
 }
 
-function ImageCarousel({ images, productName, className = "" }: ImageCarouselProps) {
+export function ImageCarousel({ images, productName, className = "" }: ImageCarouselProps) {
   // ... (código del carrusel se mantiene igual)
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -78,7 +78,7 @@ function ImageCarousel({ images, productName, className = "" }: ImageCarouselPro
           alt={`${productName} - Imagen ${currentIndex + 1}`}
           className="w-full h-full object-cover"
           onError={(e) => {
-            (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
+            (e.target as HTMLImageElement).src = 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png';
           }}
         />
         
@@ -448,7 +448,6 @@ export function ProductosView() {
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="text-sm font-medium">Producto: {currentStockProduct?.nombre}</div>
-              <div className="text-sm font-medium">Variante: {stockFormData.productoNombre}</div>
             </div>
             <div className="space-y-2">
               <div className="text-sm font-medium">Stock actual</div>
