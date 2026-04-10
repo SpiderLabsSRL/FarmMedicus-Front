@@ -4,18 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Settings, Users, Bell, Shield, Database, Palette } from "lucide-react";
 import { ManagementSection } from "./ManagementSection";
 import {
-  getColoresDiseno,
-  createColorDiseno,
-  updateColorDiseno,
-  deleteColorDiseno,
-  getColoresLuz,
-  createColorLuz,
-  updateColorLuz,
-  deleteColorLuz,
-  getTipos,
-  createTipo,
-  updateTipo,
-  deleteTipo,
   getCategorias,
   createCategoria,
   updateCategoria,
@@ -24,26 +12,11 @@ import {
   createUbicacion,
   updateUbicacion,
   deleteUbicacion,
-  getWatts,
-  createWatt,
-  updateWatt,
-  deleteWatt,
-  getTamanos,
-  createTamano,
-  updateTamano,
-  deleteTamano,
-  ManagementItem
 } from "@/api/ManagementSectionApi";
 
 export function ConfiguracionView() {
-  // Estados para cada tipo de configuración
-  const [coloresDiseno, setColoresDiseno] = useState<string[]>([]);
-  const [coloresLuz, setColoresLuz] = useState<string[]>([]);
-  const [tipos, setTipos] = useState<string[]>([]);
   const [categorias, setCategorias] = useState<string[]>([]);
   const [ubicaciones, setUbicaciones] = useState<string[]>([]);
-  const [watts, setWatts] = useState<string[]>([]);
-  const [tamaños, setTamaños] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Estados de carga para cada sección
@@ -138,32 +111,16 @@ export function ConfiguracionView() {
         
         // Cargar todos los datos en paralelo
         const [
-          coloresDisenoData,
-          coloresLuzData,
-          tiposData,
           categoriasData,
-          ubicacionesData,
-          wattsData,
-          tamanosData
+          ubicacionesData
         ] = await Promise.all([
-          getColoresDiseno(),
-          getColoresLuz(),
-          getTipos(),
           getCategorias(),
-          getUbicaciones(),
-          getWatts(),
-          getTamanos()
+          getUbicaciones()
         ]);
 
         // Mapear a arrays de strings (solo los nombres)
-        setColoresDiseno(coloresDisenoData.map(item => item.nombre));
-        setColoresLuz(coloresLuzData.map(item => item.nombre));
-        setTipos(tiposData.map(item => item.nombre));
         setCategorias(categoriasData.map(item => item.nombre));
         setUbicaciones(ubicacionesData.map(item => item.nombre));
-        setWatts(wattsData.map(item => item.nombre));
-        setTamaños(tamanosData.map(item => item.nombre));
-        
       } catch (error) {
         console.error("Error loading configuration data:", error);
       } finally {
@@ -173,153 +130,6 @@ export function ConfiguracionView() {
 
     loadData();
   }, []);
-
-  // Handlers para Colores de Diseño
-  const handleAddColorDiseno = async (name: string) => {
-    setSectionLoading('coloresDiseno', true);
-    try {
-      await createColorDiseno({ nombre: name });
-      const updatedData = await getColoresDiseno();
-      setColoresDiseno(updatedData.map(item => item.nombre));
-      handleCloseForm('coloresDiseno');
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('coloresDiseno', false);
-    }
-  };
-
-  const handleEditColorDiseno = async (oldName: string, newName: string) => {
-    setSectionLoading('coloresDiseno', true);
-    try {
-      const currentData = await getColoresDiseno();
-      const itemToEdit = currentData.find(item => item.nombre === oldName);
-      if (itemToEdit) {
-        await updateColorDiseno(itemToEdit.id, { nombre: newName });
-        const updatedData = await getColoresDiseno();
-        setColoresDiseno(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('coloresDiseno', false);
-    }
-  };
-
-  const handleDeleteColorDiseno = async (name: string) => {
-    setSectionLoading('coloresDiseno', true);
-    try {
-      const currentData = await getColoresDiseno();
-      const itemToDelete = currentData.find(item => item.nombre === name);
-      if (itemToDelete) {
-        await deleteColorDiseno(itemToDelete.id);
-        const updatedData = await getColoresDiseno();
-        setColoresDiseno(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('coloresDiseno', false);
-    }
-  };
-
-  // Handlers para Colores de Luz
-  const handleAddColorLuz = async (name: string) => {
-    setSectionLoading('coloresLuz', true);
-    try {
-      await createColorLuz({ nombre: name });
-      const updatedData = await getColoresLuz();
-      setColoresLuz(updatedData.map(item => item.nombre));
-      handleCloseForm('coloresLuz');
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('coloresLuz', false);
-    }
-  };
-
-  const handleEditColorLuz = async (oldName: string, newName: string) => {
-    setSectionLoading('coloresLuz', true);
-    try {
-      const currentData = await getColoresLuz();
-      const itemToEdit = currentData.find(item => item.nombre === oldName);
-      if (itemToEdit) {
-        await updateColorLuz(itemToEdit.id, { nombre: newName });
-        const updatedData = await getColoresLuz();
-        setColoresLuz(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('coloresLuz', false);
-    }
-  };
-
-  const handleDeleteColorLuz = async (name: string) => {
-    setSectionLoading('coloresLuz', true);
-    try {
-      const currentData = await getColoresLuz();
-      const itemToDelete = currentData.find(item => item.nombre === name);
-      if (itemToDelete) {
-        await deleteColorLuz(itemToDelete.id);
-        const updatedData = await getColoresLuz();
-        setColoresLuz(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('coloresLuz', false);
-    }
-  };
-
-  // Handlers para Tipos
-  const handleAddTipo = async (name: string) => {
-    setSectionLoading('tipos', true);
-    try {
-      await createTipo({ nombre: name });
-      const updatedData = await getTipos();
-      setTipos(updatedData.map(item => item.nombre));
-      handleCloseForm('tipos');
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('tipos', false);
-    }
-  };
-
-  const handleEditTipo = async (oldName: string, newName: string) => {
-    setSectionLoading('tipos', true);
-    try {
-      const currentData = await getTipos();
-      const itemToEdit = currentData.find(item => item.nombre === oldName);
-      if (itemToEdit) {
-        await updateTipo(itemToEdit.id, { nombre: newName });
-        const updatedData = await getTipos();
-        setTipos(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('tipos', false);
-    }
-  };
-
-  const handleDeleteTipo = async (name: string) => {
-    setSectionLoading('tipos', true);
-    try {
-      const currentData = await getTipos();
-      const itemToDelete = currentData.find(item => item.nombre === name);
-      if (itemToDelete) {
-        await deleteTipo(itemToDelete.id);
-        const updatedData = await getTipos();
-        setTipos(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('tipos', false);
-    }
-  };
 
   // Handlers para Categorías
   const handleAddCategoria = async (name: string) => {
@@ -419,104 +229,6 @@ export function ConfiguracionView() {
     }
   };
 
-  // Handlers para Watts
-  const handleAddWatts = async (name: string) => {
-    setSectionLoading('watts', true);
-    try {
-      await createWatt({ nombre: name });
-      const updatedData = await getWatts();
-      setWatts(updatedData.map(item => item.nombre));
-      handleCloseForm('watts');
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('watts', false);
-    }
-  };
-
-  const handleEditWatts = async (oldName: string, newName: string) => {
-    setSectionLoading('watts', true);
-    try {
-      const currentData = await getWatts();
-      const itemToEdit = currentData.find(item => item.nombre === oldName);
-      if (itemToEdit) {
-        await updateWatt(itemToEdit.id, { nombre: newName });
-        const updatedData = await getWatts();
-        setWatts(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('watts', false);
-    }
-  };
-
-  const handleDeleteWatts = async (name: string) => {
-    setSectionLoading('watts', true);
-    try {
-      const currentData = await getWatts();
-      const itemToDelete = currentData.find(item => item.nombre === name);
-      if (itemToDelete) {
-        await deleteWatt(itemToDelete.id);
-        const updatedData = await getWatts();
-        setWatts(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('watts', false);
-    }
-  };
-
-  // Handlers para Tamaños
-  const handleAddTamaño = async (name: string) => {
-    setSectionLoading('tamanos', true);
-    try {
-      await createTamano({ nombre: name });
-      const updatedData = await getTamanos();
-      setTamaños(updatedData.map(item => item.nombre));
-      handleCloseForm('tamanos');
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('tamanos', false);
-    }
-  };
-
-  const handleEditTamaño = async (oldName: string, newName: string) => {
-    setSectionLoading('tamanos', true);
-    try {
-      const currentData = await getTamanos();
-      const itemToEdit = currentData.find(item => item.nombre === oldName);
-      if (itemToEdit) {
-        await updateTamano(itemToEdit.id, { nombre: newName });
-        const updatedData = await getTamanos();
-        setTamaños(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('tamanos', false);
-    }
-  };
-
-  const handleDeleteTamaño = async (name: string) => {
-    setSectionLoading('tamanos', true);
-    try {
-      const currentData = await getTamanos();
-      const itemToDelete = currentData.find(item => item.nombre === name);
-      if (itemToDelete) {
-        await deleteTamano(itemToDelete.id);
-        const updatedData = await getTamanos();
-        setTamaños(updatedData.map(item => item.nombre));
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      setSectionLoading('tamanos', false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -533,48 +245,6 @@ export function ConfiguracionView() {
 
       {/* Secciones de gestión */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ManagementSection
-          title="Colores de Diseño"
-          icon={Palette}
-          iconColor="text-pink-600"
-          data={coloresDiseno}
-          onAdd={handleAddColorDiseno}
-          onEdit={handleEditColorDiseno}
-          onDelete={handleDeleteColorDiseno}
-          onCloseForm={() => handleCloseForm('coloresDiseno')}
-          loading={loadingStates.coloresDiseno}
-          isFormOpen={openForms.coloresDiseno}
-          onToggleForm={(isOpen) => toggleForm('coloresDiseno', isOpen)}
-        />
-
-        <ManagementSection
-          title="Colores de Luz"
-          icon={Palette}
-          iconColor="text-yellow-600"
-          data={coloresLuz}
-          onAdd={handleAddColorLuz}
-          onEdit={handleEditColorLuz}
-          onDelete={handleDeleteColorLuz}
-          onCloseForm={() => handleCloseForm('coloresLuz')}
-          loading={loadingStates.coloresLuz}
-          isFormOpen={openForms.coloresLuz}
-          onToggleForm={(isOpen) => toggleForm('coloresLuz', isOpen)}
-        />
-
-        <ManagementSection
-          title="Tipos"
-          icon={Settings}
-          iconColor="text-blue-600"
-          data={tipos}
-          onAdd={handleAddTipo}
-          onEdit={handleEditTipo}
-          onDelete={handleDeleteTipo}
-          onCloseForm={() => handleCloseForm('tipos')}
-          loading={loadingStates.tipos}
-          isFormOpen={openForms.tipos}
-          onToggleForm={(isOpen) => toggleForm('tipos', isOpen)}
-        />
-
         <ManagementSection
           title="Categorías"
           icon={Settings}
@@ -601,34 +271,6 @@ export function ConfiguracionView() {
           loading={loadingStates.ubicaciones}
           isFormOpen={openForms.ubicaciones}
           onToggleForm={(isOpen) => toggleForm('ubicaciones', isOpen)}
-        />
-
-        <ManagementSection
-          title="Watts"
-          icon={Settings}
-          iconColor="text-orange-600"
-          data={watts}
-          onAdd={handleAddWatts}
-          onEdit={handleEditWatts}
-          onDelete={handleDeleteWatts}
-          onCloseForm={() => handleCloseForm('watts')}
-          loading={loadingStates.watts}
-          isFormOpen={openForms.watts}
-          onToggleForm={(isOpen) => toggleForm('watts', isOpen)}
-        />
-
-        <ManagementSection
-          title="Tamaños"
-          icon={Settings}
-          iconColor="text-indigo-600"
-          data={tamaños}
-          onAdd={handleAddTamaño}
-          onEdit={handleEditTamaño}
-          onDelete={handleDeleteTamaño}
-          onCloseForm={() => handleCloseForm('tamanos')}
-          loading={loadingStates.tamanos}
-          isFormOpen={openForms.tamanos}
-          onToggleForm={(isOpen) => toggleForm('tamanos', isOpen)}
         />
       </div>
     </div>
