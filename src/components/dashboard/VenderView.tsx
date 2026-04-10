@@ -131,6 +131,13 @@ export function VenderView() {
           // Procesar el código de barras
           setSearchQuery(barcode);
 
+          // Mantener el foco en el input
+          setTimeout(() => {
+            if (searchInputRef.current) {
+              searchInputRef.current.focus();
+            }
+          }, 0);
+
           // Opcional: mostrar feedback visual
           toast({
             title: "Código escaneado",
@@ -191,10 +198,12 @@ export function VenderView() {
       const results = await searchProducts(query);
       setSearchResults(results);
 
-      // Ocultar el teclado después de la búsqueda (especialmente importante en móvil)
-      if (searchInputRef.current) {
-        searchInputRef.current.blur();
-      }
+      // Mantener el foco en el input después de la búsqueda
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 0);
     } catch (error) {
       toast({
         title: "Error",
@@ -214,27 +223,30 @@ export function VenderView() {
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Si presiona Enter, ocultar el teclado
+    // No prevenir el comportamiento por defecto para mantener el foco
     if (e.key === "Enter") {
       e.preventDefault();
+      // Mantener el foco
       if (searchInputRef.current) {
-        searchInputRef.current.blur();
+        searchInputRef.current.focus();
       }
     }
   };
 
   const handleSearchFocus = () => {
     // Solo para debugging, puedes comentar esto después
-    console.log("Search input focused manually");
+    console.log("Search input focused");
   };
 
   const toggleProductExpansion = (productId: number) => {
     setExpandedProduct(expandedProduct === productId ? null : productId);
 
-    // Asegurarse de que el teclado esté oculto cuando se expanden/contraen las variantes
-    if (searchInputRef.current) {
-      searchInputRef.current.blur();
-    }
+    // Mantener el foco en el input después de expandir/contraer
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 0);
   };
 
   const agregarProducto = (product: Product) => {
@@ -288,10 +300,12 @@ export function VenderView() {
     setSearchResults([]);
     setExpandedProduct(null);
 
-    // Ocultar el teclado después de agregar un producto
-    if (searchInputRef.current) {
-      searchInputRef.current.blur();
-    }
+    // Mantener el foco en el input después de agregar un producto
+    setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+    }, 0);
 
     if (isMobile && cartRef.current) {
       setTimeout(() => {
@@ -473,6 +487,13 @@ export function VenderView() {
       });
 
       await loadCashStatus();
+
+      // Mantener el foco después de procesar la venta
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 0);
     } catch (error) {
       toast({
         title: "Error",
@@ -483,6 +504,49 @@ export function VenderView() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Función para obtener la URL de la imagen
+  const getImageUrl = (imagen: any) => {
+    if (!imagen) return null;
+
+    // Si es string
+    if (typeof imagen === "string") {
+      // Si ya es una URL completa o data URL
+      if (imagen.startsWith("http") || imagen.startsWith("data:image")) {
+        return imagen;
+      }
+      // Si es base64 sin el prefijo
+      if (imagen.length > 0) {
+        return `data:image/jpeg;base64,${imagen}`;
+      }
+      return null;
+    }
+
+    // Si es Buffer o ArrayBuffer
+    if (imagen.data && Array.isArray(imagen.data)) {
+      // Convertir array de bytes a base64
+      const uint8Array = new Uint8Array(imagen.data);
+      let binary = "";
+      for (let i = 0; i < uint8Array.length; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64 = btoa(binary);
+      return `data:image/jpeg;base64,${base64}`;
+    }
+
+    // Si es otro tipo de objeto
+    if (typeof imagen === "object" && imagen !== null) {
+      try {
+        const jsonString = JSON.stringify(imagen);
+        return `data:image/jpeg;base64,${btoa(jsonString)}`;
+      } catch (e) {
+        console.error("Error converting image object:", e);
+        return null;
+      }
+    }
+
+    return null;
   };
 
   return (
@@ -525,7 +589,7 @@ export function VenderView() {
                 onFocus={handleSearchFocus}
                 className="pl-10"
                 disabled={loading}
-                autoFocus={false} // No enfocar automáticamente
+                autoFocus={true}
               />
             </div>
 
@@ -547,19 +611,29 @@ export function VenderView() {
                       onClick={() => toggleProductExpansion(product.idproducto)}
                     >
                       <div className="flex items-start gap-3 flex-1">
-                        {product.imagen ? (
-                          <img
-                            src={`data:image/jpeg;base64,${product.imagen}`}
-                            alt={product.nombre}
-                            className="w-16 h-16 rounded-md object-cover"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center">
-                            <span className="text-xs text-muted-foreground">
-                              Sin imagen
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const imageUrl = getImageUrl(product.imagen);
+                          return imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={product.nombre}
+                              className="w-16 h-16 rounded-md object-cover"
+                              onError={(e) => {
+                                console.error(
+                                  "Error loading image for product:",
+                                  product.nombre,
+                                );
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">
+                                Sin imagen
+                              </span>
+                            </div>
+                          );
+                        })()}
                         <div className="flex-1 min-w-0">
                           <h4
                             className={`font-semibold text-sm ${isMobile ? "break-words" : ""}`}
@@ -582,7 +656,10 @@ export function VenderView() {
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => agregarProducto(product)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          agregarProducto(product);
+                        }}
                         disabled={product.stock === 0}
                       >
                         {product.stock === 0 ? "Sin Stock" : "Agregar"}
@@ -624,19 +701,29 @@ export function VenderView() {
                   >
                     {/* Primera fila: Información del producto */}
                     <div className="flex items-start gap-3 mb-3">
-                      {item.imagen ? (
-                        <img
-                          src={`data:image/jpeg;base64,${item.imagen}`}
-                          alt={item.nombre}
-                          className="w-12 h-12 rounded object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs text-muted-foreground">
-                            Sin img
-                          </span>
-                        </div>
-                      )}
+                      {(() => {
+                        const imageUrl = getImageUrl(item.imagen);
+                        return imageUrl ? (
+                          <img
+                            src={imageUrl}
+                            alt={item.nombre}
+                            className="w-12 h-12 rounded object-cover flex-shrink-0"
+                            onError={(e) => {
+                              console.error(
+                                "Error loading image for cart item:",
+                                item.nombre,
+                              );
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs text-muted-foreground">
+                              Sin img
+                            </span>
+                          </div>
+                        );
+                      })()}
                       <div className="flex-1 min-w-0">
                         <h5 className="font-medium text-sm break-words whitespace-normal leading-tight">
                           {item.nombre}
