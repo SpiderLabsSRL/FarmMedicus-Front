@@ -755,36 +755,16 @@ export function FormularioProductos({
               <Label htmlFor="ubicacion" className="text-xs font-medium">
                 Ubicación <span className="text-red-500">*</span>
               </Label>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-6 w-6 p-0"
-                    disabled={isAddingElement}
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirmar Acción</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      ¿Estás seguro de abrir el formulario para agregar una
-                      nueva ubicación?
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => openAddDialog("ubicacion")}
-                    >
-                      Confirmar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-6 w-6 p-0"
+                onClick={() => openAddDialog("ubicacion")}
+                disabled={isAddingElement}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
             </div>
             <select
               value={formData.ubicacion}
