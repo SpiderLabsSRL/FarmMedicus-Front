@@ -460,21 +460,24 @@ export function ProductosView() {
                 <span className="sm:hidden">Agregar</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
+            {/* MODIFICADO: Cambiado max-w-4xl a max-w-md y eliminado overflow-y-auto para que entre sin scroll */}
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0">
+              <DialogHeader className="px-6 pt-6">
                 <DialogTitle>
                   {editingProduct
                     ? "Editar Producto"
                     : "Agregar Nuevo Producto"}
                 </DialogTitle>
               </DialogHeader>
-              <FormularioProductos
-                product={editingProduct}
-                ubicaciones={ubicaciones}
-                categorias={categorias}
-                onSubmit={handleFormSubmit}
-                onCancel={handleFormCancel}
-              />
+              <div className="px-6 pb-6">
+                <FormularioProductos
+                  product={editingProduct}
+                  ubicaciones={ubicaciones}
+                  categorias={categorias}
+                  onSubmit={handleFormSubmit}
+                  onCancel={handleFormCancel}
+                />
+              </div>
             </DialogContent>
           </Dialog>
         )}
@@ -576,7 +579,6 @@ export function ProductosView() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
-              disabled={showAllProducts}
             />
             {searching && (
               <div className="absolute right-3 top-3">
@@ -597,26 +599,26 @@ export function ProductosView() {
               {(searchTerm.trim().length >= 2 || showAllProducts) &&
                 products.length > 0 && (
                   <>
-                    {/* Vista móvil - Cards */}
-                    <div className="block lg:hidden space-y-3 w-full overflow-hidden">
+                    {/* Vista móvil y tablet - Cards */}
+                    <div className="block xl:hidden space-y-3 w-full">
                       {products.map((product) => {
                         const totalStock = getTotalStock(product);
                         const allImages = getProductImage(product);
 
                         return (
                           <Card key={product.idproducto} className="p-3 w-full">
-                            <div className="space-y-2 w-full">
+                            <div className="space-y-3 w-full">
                               <div className="flex items-start gap-3 w-full">
-                                <div className="flex-shrink-0 w-20 h-20">
+                                <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20">
                                   <ImageCarousel
                                     images={allImages}
                                     productName={product.nombre}
-                                    className="w-20 h-20"
+                                    className="w-16 h-16 sm:w-20 sm:h-20"
                                   />
                                 </div>
 
-                                <div className="flex-1 min-w-0 overflow-hidden">
-                                  <h3 className="font-medium text-sm leading-tight line-clamp-2 break-words">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 break-words">
                                     {product.nombre}
                                   </h3>
                                   <div className="flex flex-wrap gap-1 mt-1">
@@ -645,35 +647,35 @@ export function ProductosView() {
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                                 <div>
                                   <span className="font-medium">
                                     Ubicación:
                                   </span>
-                                  <span className="text-muted-foreground ml-1">
+                                  <span className="text-muted-foreground ml-1 block sm:inline">
                                     {product.ubicacion}
                                   </span>
                                 </div>
                                 <div>
                                   <span className="font-medium">Stock:</span>
-                                  <span className="text-primary ml-1">
+                                  <span className="text-primary ml-1 font-semibold">
                                     {product.stock} u.
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Precio:</span>
+                                  <span className="text-primary ml-1 font-semibold">
+                                    Bs {Number(product.precio_venta).toFixed(2)}
                                   </span>
                                 </div>
                                 {product.codigo_barras && (
                                   <div className="col-span-2">
                                     <span className="font-medium">Código:</span>
-                                    <span className="text-muted-foreground ml-1 font-mono text-xs">
+                                    <span className="text-muted-foreground ml-1 font-mono text-xs break-all">
                                       {product.codigo_barras}
                                     </span>
                                   </div>
                                 )}
-                                <div className="col-span-2">
-                                  <span className="font-medium">Precio:</span>
-                                  <span className="text-primary ml-1">
-                                    Bs {Number(product.precio_venta).toFixed(2)}
-                                  </span>
-                                </div>
                               </div>
 
                               {product.productos_similares &&
@@ -714,7 +716,7 @@ export function ProductosView() {
                                   </div>
                                 )}
 
-                              <div className="flex gap-1.5 pt-2">
+                              <div className="flex flex-wrap gap-2 pt-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -722,7 +724,7 @@ export function ProductosView() {
                                   className="flex-1 h-8 text-xs"
                                 >
                                   <Package className="h-3 w-3 mr-1" />
-                                  Stock
+                                  Añadir Stock
                                 </Button>
                                 {!isAssistant && (
                                   <>
@@ -783,373 +785,226 @@ export function ProductosView() {
                       })}
                     </div>
 
-                    {/* Vista tablet - Tabla compacta */}
-                    <div className="hidden lg:block xl:hidden border rounded-lg overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[80px]">Imagen</TableHead>
-                            <TableHead className="min-w-[180px]">
-                              Producto
-                            </TableHead>
-                            <TableHead className="w-[100px]">
-                              Ubicación
-                            </TableHead>
-                            <TableHead className="w-[130px]">Código</TableHead>
-                            <TableHead className="min-w-[150px]">
-                              Similares
-                            </TableHead>
-                            <TableHead className="w-[100px]">
-                              Stock/Precio
-                            </TableHead>
-                            <TableHead className="w-[100px] text-right">
-                              Acciones
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {products.map((product) => {
-                            const allImages = getProductImage(product);
+                    {/* Vista desktop - Tabla responsiva sin scroll */}
+                    <div className="hidden xl:block">
+                      <div className="w-full border rounded-lg">
+                        <div className="overflow-x-auto">
+                          <Table className="min-w-full">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-[70px]">Img</TableHead>
+                                <TableHead>Producto</TableHead>
+                                <TableHead className="w-[100px]">
+                                  Ubic.
+                                </TableHead>
+                                <TableHead className="w-[120px]">
+                                  Código
+                                </TableHead>
+                                <TableHead className="min-w-[150px]">
+                                  Similares
+                                </TableHead>
+                                <TableHead className="w-[80px]">
+                                  Stock
+                                </TableHead>
+                                <TableHead className="w-[100px]">
+                                  Precio
+                                </TableHead>
+                                <TableHead className="w-[100px] text-right">
+                                  Acciones
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {products.map((product) => {
+                                const allImages = getProductImage(product);
 
-                            return (
-                              <TableRow key={product.idproducto}>
-                                <TableCell>
-                                  <div className="w-12 h-12">
-                                    <ImageCarousel
-                                      images={allImages}
-                                      productName={product.nombre}
-                                      className="w-12 h-12"
-                                    />
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="font-medium text-sm">
-                                    {product.nombre}
-                                  </div>
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {product.categorias
-                                      .slice(0, 2)
-                                      .map((categoria, index) => (
-                                        <Badge
-                                          key={index}
-                                          variant="secondary"
-                                          className="text-xs"
-                                        >
-                                          {categoria.length > 12
-                                            ? categoria.substring(0, 9) + "..."
-                                            : categoria}
-                                        </Badge>
-                                      ))}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-sm">
-                                  {product.ubicacion}
-                                </TableCell>
-                                <TableCell>
-                                  {product.codigo_barras ? (
-                                    <span className="text-xs font-mono">
-                                      {product.codigo_barras.substring(0, 12)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">
-                                      —
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  {product.productos_similares &&
-                                  product.productos_similares.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1">
-                                      {product.productos_similares
-                                        .slice(0, 2)
-                                        .map((similar, idx) => (
-                                          <Badge
-                                            key={idx}
-                                            variant="outline"
-                                            className="text-xs"
-                                          >
-                                            {similar.nombre.length > 15
-                                              ? similar.nombre.substring(
-                                                  0,
-                                                  12,
-                                                ) + "..."
-                                              : similar.nombre}
-                                          </Badge>
-                                        ))}
-                                      {product.productos_similares.length >
-                                        2 && (
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs"
-                                        >
-                                          +
-                                          {product.productos_similares.length -
-                                            2}
-                                        </Badge>
+                                return (
+                                  <TableRow key={product.idproducto}>
+                                    <TableCell>
+                                      <div className="w-10 h-10">
+                                        <ImageCarousel
+                                          images={allImages}
+                                          productName={product.nombre}
+                                          className="w-10 h-10"
+                                        />
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div>
+                                        <div className="font-medium text-sm">
+                                          {product.nombre}
+                                        </div>
+                                        <div className="flex flex-wrap gap-1 mt-1">
+                                          {product.categorias
+                                            .slice(0, 2)
+                                            .map((categoria, index) => (
+                                              <Badge
+                                                key={index}
+                                                variant="secondary"
+                                                className="text-xs"
+                                              >
+                                                {categoria.length > 10
+                                                  ? categoria.substring(0, 8) +
+                                                    "..."
+                                                  : categoria}
+                                              </Badge>
+                                            ))}
+                                          {product.categorias.length > 2 && (
+                                            <Badge
+                                              variant="secondary"
+                                              className="text-xs"
+                                            >
+                                              +{product.categorias.length - 2}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {product.ubicacion}
+                                    </TableCell>
+                                    <TableCell>
+                                      {product.codigo_barras ? (
+                                        <span className="text-xs font-mono">
+                                          {product.codigo_barras.length > 12
+                                            ? product.codigo_barras.substring(
+                                                0,
+                                                10,
+                                              ) + "..."
+                                            : product.codigo_barras}
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">
+                                          —
+                                        </span>
                                       )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">
-                                      —
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-sm font-medium text-primary">
-                                    Stock: {product.stock}
-                                  </div>
-                                  <div className="text-xs">
-                                    Bs {Number(product.precio_venta).toFixed(2)}
-                                  </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleIncreaseStock(product)}
-                                    className="h-6 text-xs mt-1 px-2"
-                                  >
-                                    <Package className="h-2.5 w-2.5 mr-1" />
-                                    Añadir
-                                  </Button>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end space-x-1">
-                                    {!isAssistant && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleEdit(product)}
-                                        className="h-8 w-8 p-0"
-                                      >
-                                        <Edit className="h-3.5 w-3.5" />
-                                      </Button>
-                                    )}
-                                    {!isAssistant && (
-                                      <AlertDialog>
-                                        <AlertDialogTrigger asChild>
+                                    </TableCell>
+                                    <TableCell>
+                                      {product.productos_similares &&
+                                      product.productos_similares.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1">
+                                          {product.productos_similares
+                                            .slice(0, 2)
+                                            .map((similar, idx) => (
+                                              <Badge
+                                                key={idx}
+                                                variant="outline"
+                                                className="text-xs"
+                                              >
+                                                {similar.nombre.length > 12
+                                                  ? similar.nombre.substring(
+                                                      0,
+                                                      10,
+                                                    ) + "..."
+                                                  : similar.nombre}
+                                              </Badge>
+                                            ))}
+                                          {product.productos_similares.length >
+                                            2 && (
+                                            <Badge
+                                              variant="outline"
+                                              className="text-xs"
+                                            >
+                                              +
+                                              {product.productos_similares
+                                                .length - 2}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">
+                                          —
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="space-y-1">
+                                        <div className="text-sm font-semibold text-primary">
+                                          {product.stock}
+                                        </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() =>
+                                            handleIncreaseStock(product)
+                                          }
+                                          className="h-7 text-xs px-2"
+                                        >
+                                          <Package className="h-2.5 w-2.5 mr-1" />
+                                          +
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="text-sm font-semibold">
+                                        Bs{" "}
+                                        {Number(product.precio_venta).toFixed(
+                                          2,
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <div className="flex justify-end space-x-1">
+                                        {!isAssistant && (
                                           <Button
                                             variant="outline"
                                             size="sm"
+                                            onClick={() => handleEdit(product)}
                                             className="h-8 w-8 p-0"
                                           >
-                                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                            <Edit className="h-3.5 w-3.5" />
                                           </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>
-                                              ¿Estás seguro?
-                                            </AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              Esta acción no se puede deshacer.
-                                              Esto eliminará permanentemente el
-                                              producto "{product.nombre}".
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel>
-                                              Cancelar
-                                            </AlertDialogCancel>
-                                            <AlertDialogAction
-                                              onClick={() =>
-                                                handleDelete(
-                                                  product.idproducto,
-                                                  product.nombre,
-                                                )
-                                              }
-                                            >
-                                              Eliminar
-                                            </AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-
-                    {/* Vista desktop grande - Tabla completa */}
-                    <div className="hidden xl:block border rounded-lg overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[80px]">Imagen</TableHead>
-                            <TableHead className="min-w-[200px]">
-                              Producto
-                            </TableHead>
-                            <TableHead className="w-[120px]">
-                              Ubicación
-                            </TableHead>
-                            <TableHead className="w-[140px]">
-                              Código Barras
-                            </TableHead>
-                            <TableHead className="min-w-[200px]">
-                              Productos Similares
-                            </TableHead>
-                            <TableHead className="w-[120px]">
-                              Stock / Precio
-                            </TableHead>
-                            <TableHead className="w-[100px] text-right">
-                              Acciones
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {products.map((product) => {
-                            const allImages = getProductImage(product);
-
-                            return (
-                              <TableRow key={product.idproducto}>
-                                <TableCell>
-                                  <div className="w-14 h-14">
-                                    <ImageCarousel
-                                      images={allImages}
-                                      productName={product.nombre}
-                                      className="w-14 h-14"
-                                    />
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div>
-                                    <div className="font-medium">
-                                      {product.nombre}
-                                    </div>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {product.categorias.map(
-                                        (categoria, index) => (
-                                          <Badge
-                                            key={index}
-                                            variant="secondary"
-                                            className="text-xs"
-                                          >
-                                            {categoria}
-                                          </Badge>
-                                        ),
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-1 max-w-[250px] line-clamp-2">
-                                      {product.descripcion}
-                                    </p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <span className="text-sm">
-                                    {product.ubicacion}
-                                  </span>
-                                </TableCell>
-                                <TableCell>
-                                  {product.codigo_barras ? (
-                                    <span className="text-xs font-mono">
-                                      {product.codigo_barras}
-                                    </span>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">
-                                      —
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  {product.productos_similares &&
-                                  product.productos_similares.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1">
-                                      {product.productos_similares.map(
-                                        (similar, idx) => (
-                                          <Badge
-                                            key={idx}
-                                            variant="outline"
-                                            className="text-xs"
-                                          >
-                                            {similar.nombre}
-                                          </Badge>
-                                        ),
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">
-                                      —
-                                    </span>
-                                  )}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="space-y-1">
-                                    <div className="text-sm font-medium text-primary">
-                                      Stock: {product.stock}
-                                    </div>
-                                    <div className="text-sm">
-                                      Bs{" "}
-                                      {Number(product.precio_venta).toFixed(2)}
-                                    </div>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleIncreaseStock(product)
-                                      }
-                                      className="h-7 text-xs mt-1"
-                                    >
-                                      <Package className="h-3 w-3 mr-1" />
-                                      Añadir Stock
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end space-x-2">
-                                    {!isAssistant && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleEdit(product)}
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                    {!isAssistant && (
-                                      <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                          <Button variant="outline" size="sm">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                          </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>
-                                              ¿Estás seguro?
-                                            </AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              Esta acción no se puede deshacer.
-                                              Esto eliminará permanentemente el
-                                              producto "{product.nombre}".
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel>
-                                              Cancelar
-                                            </AlertDialogCancel>
-                                            <AlertDialogAction
-                                              onClick={() =>
-                                                handleDelete(
-                                                  product.idproducto,
-                                                  product.nombre,
-                                                )
-                                              }
-                                            >
-                                              Eliminar
-                                            </AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
+                                        )}
+                                        {!isAssistant && (
+                                          <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 w-8 p-0"
+                                              >
+                                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                              </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                                <AlertDialogTitle>
+                                                  ¿Estás seguro?
+                                                </AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                  Esta acción no se puede
+                                                  deshacer. Esto eliminará
+                                                  permanentemente el producto "
+                                                  {product.nombre}".
+                                                </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                <AlertDialogCancel>
+                                                  Cancelar
+                                                </AlertDialogCancel>
+                                                <AlertDialogAction
+                                                  onClick={() =>
+                                                    handleDelete(
+                                                      product.idproducto,
+                                                      product.nombre,
+                                                    )
+                                                  }
+                                                >
+                                                  Eliminar
+                                                </AlertDialogAction>
+                                              </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
                     </div>
                   </>
                 )}

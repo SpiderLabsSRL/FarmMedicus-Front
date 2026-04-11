@@ -12,7 +12,7 @@ import {
   Settings,
   LogOut,
   Clock,
-  StickyNote
+  StickyNote,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -20,7 +20,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -40,34 +39,78 @@ interface AppSidebarProps {
 }
 
 const menuItems = [
-  { title: "Vender", url: "vender", icon: ShoppingCart, roles: ["admin", "asistente"] },
-  { title: "Notas", url: "notas", icon: StickyNote, roles: ["admin", "asistente"] },
-  { title: "Productos", url: "productos", icon: Package, roles: ["admin", "asistente"] },
+  {
+    title: "Vender",
+    url: "vender",
+    icon: ShoppingCart,
+    roles: ["admin", "asistente"],
+  },
+  {
+    title: "Notas",
+    url: "notas",
+    icon: StickyNote,
+    roles: ["admin", "asistente"],
+  },
+  {
+    title: "Productos",
+    url: "productos",
+    icon: Package,
+    roles: ["admin", "asistente"],
+  },
   { title: "Inventario", url: "inventario", icon: Package2, roles: ["admin"] },
-  { title: "Ventas", url: "ventas", icon: TrendingUp, roles: ["admin", "asistente"] },
-  { title: "Cotización", url: "cotizacion", icon: FileText, roles: ["admin", "asistente"] },
-  { title: "Pagos Pendientes", url: "pagos-pendientes", icon: Clock, roles: ["admin", "asistente"] },
+  {
+    title: "Ventas",
+    url: "ventas",
+    icon: TrendingUp,
+    roles: ["admin", "asistente"],
+  },
+  {
+    title: "Cotización",
+    url: "cotizacion",
+    icon: FileText,
+    roles: ["admin", "asistente"],
+  },
+  {
+    title: "Pagos Pendientes",
+    url: "pagos-pendientes",
+    icon: Clock,
+    roles: ["admin", "asistente"],
+  },
   { title: "Caja", url: "caja", icon: CreditCard, roles: ["admin"] },
-  { title: "Registra Movimiento", url: "registra-movimiento", icon: CreditCard, roles: ["admin", "asistente"] },
+  {
+    title: "Registra Movimiento",
+    url: "registra-movimiento",
+    icon: CreditCard,
+    roles: ["admin", "asistente"],
+  },
   { title: "Reportes", url: "reportes", icon: FileBarChart, roles: ["admin"] },
   { title: "Ecommerce", url: "ecommerce", icon: Globe, roles: ["admin"] },
-  { title: "Configuración", url: "configuracion", icon: Settings, roles: ["admin"] },
+  {
+    title: "Configuración",
+    url: "configuracion",
+    icon: Settings,
+    roles: ["admin"],
+  },
   { title: "Alertas", url: "alertas", icon: Bell, roles: ["admin"] },
-  { title: "Gestión de Usuarios", url: "usuarios", icon: Users, roles: ["admin"] },
+  {
+    title: "Gestión de Usuarios",
+    url: "usuarios",
+    icon: Users,
+    roles: ["admin"],
+  },
 ];
 
 export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   const { state, setOpenMobile } = useSidebar();
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
-  
+
   const user = getCurrentUser();
   const userRole = user?.rol.toLowerCase() || "admin";
 
   // Filtrar opciones de menú según el rol
-  const filteredMenuItems = menuItems.filter(item => 
-    item.roles.includes(userRole)
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.roles.includes(userRole),
   );
 
   const collapsed = state === "collapsed";
@@ -119,27 +162,32 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   }, [currentView, setOpenMobile]);
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
-      <SidebarHeader className="p-4">
+    <Sidebar className="h-screen overflow-hidden">
+      <SidebarHeader className="p-4 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/84af3e7f-9171-4c73-900f-9499a9673234.png" 
-            alt="NEOLED Logo" 
+          <img
+            src="/lovable-uploads/84af3e7f-9171-4c73-900f-9499a9673234.png"
+            alt="NEOLED Logo"
             className={`${collapsed ? "h-8 w-8" : "h-auto w-auto"} transition-all`}
           />
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="flex-1 overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <SidebarGroup>
-          <SidebarGroupLabel>Sistema POS</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    onClick={() => handleMenuItemClick(item.url as DashboardView)}
-                    className={isActive(item.url) ? "bg-primary text-primary-foreground" : ""}
+                  <SidebarMenuButton
+                    onClick={() =>
+                      handleMenuItemClick(item.url as DashboardView)
+                    }
+                    className={
+                      isActive(item.url)
+                        ? "bg-primary text-primary-foreground"
+                        : ""
+                    }
                     tooltip={collapsed ? item.title : undefined}
                   >
                     <item.icon className="h-4 w-4" />
@@ -152,25 +200,16 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
-        <div className="space-y-2">
-          {!collapsed && (
-            <div className="text-xs text-muted-foreground text-center">
-              Conectado como: <strong>{user?.nombres} {user?.apellidos}</strong>
-              <br />
-              Rol: <strong>{user?.rol}</strong>
-            </div>
-          )}
-          <Button
-            variant="outline"
-            size={collapsed ? "sm" : "default"}
-            onClick={handleLogout}
-            className="w-full"
-          >
-            <LogOut className="h-4 w-4" />
-            {!collapsed && <span className="ml-2">Cerrar Sesión</span>}
-          </Button>
-        </div>
+      <SidebarFooter className="p-4 flex-shrink-0">
+        <Button
+          variant="outline"
+          size={collapsed ? "sm" : "default"}
+          onClick={handleLogout}
+          className="w-full"
+        >
+          <LogOut className="h-4 w-4" />
+          {!collapsed && <span className="ml-2">Cerrar Sesión</span>}
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );

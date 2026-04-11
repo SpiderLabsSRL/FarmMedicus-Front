@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, X, Search } from "lucide-react";
+import { Plus, X, Search, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AddItemDialog } from "./AddItemDialog";
 import {
@@ -104,8 +104,8 @@ const SearchSelect = ({
   };
 
   return (
-    <div className="space-y-2">
-      <Label>
+    <div className="space-y-1">
+      <Label className="text-xs">
         {label} {required && <span className="text-red-500">*</span>}
       </Label>
       <div className="relative">
@@ -118,14 +118,15 @@ const SearchSelect = ({
           onFocus={() => setIsOpen(true)}
           onBlur={() => setTimeout(() => setIsOpen(false), 200)}
           placeholder={placeholder}
+          className="h-8 text-xs"
         />
         {isOpen && filteredOptions.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+          <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-28 overflow-y-auto">
             {filteredOptions.map((option) => (
               <button
                 key={option}
                 type="button"
-                className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground"
+                className="w-full text-left px-2 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
                 onMouseDown={() => addSelection(option)}
               >
                 {option}
@@ -135,12 +136,12 @@ const SearchSelect = ({
         )}
       </div>
       {selectedValues.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1">
           {selectedValues.map((value) => (
             <Badge
               key={value}
               variant="secondary"
-              className="flex items-center gap-1"
+              className="text-xs px-1.5 py-0 h-5"
             >
               {value}
               <button
@@ -148,7 +149,7 @@ const SearchSelect = ({
                 onClick={() => removeSelection(value)}
                 className="ml-1 hover:text-destructive"
               >
-                <X className="h-3 w-3" />
+                <X className="h-2.5 w-2.5" />
               </button>
             </Badge>
           ))}
@@ -200,30 +201,28 @@ const ProductoSimilarSelect = ({
   };
 
   return (
-    <div className="space-y-2">
-      <Label>Productos Similares</Label>
+    <div className="space-y-1">
+      <Label className="text-xs">Productos Similares</Label>
       <div className="relative">
-        <div className="flex">
-          <Input
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setIsOpen(true);
-            }}
-            onFocus={() => setIsOpen(true)}
-            onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-            placeholder="Buscar productos similares..."
-            className="flex-1"
-          />
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        </div>
+        <Input
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          onBlur={() => setTimeout(() => setIsOpen(false), 200)}
+          placeholder="Buscar productos similares..."
+          className="h-8 text-xs pl-7"
+        />
+        <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
         {isOpen && filteredOptions.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-40 overflow-y-auto">
+          <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-28 overflow-y-auto">
             {filteredOptions.map((producto) => (
               <button
                 key={producto.idproducto}
                 type="button"
-                className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground"
+                className="w-full text-left px-2 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
                 onMouseDown={() => addSelection(producto)}
               >
                 {producto.nombre}
@@ -233,12 +232,12 @@ const ProductoSimilarSelect = ({
         )}
       </div>
       {selectedValues.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1">
           {selectedValues.map((id) => (
             <Badge
               key={id}
               variant="secondary"
-              className="flex items-center gap-1"
+              className="text-xs px-1.5 py-0 h-5"
             >
               {getProductoNombre(id)}
               <button
@@ -246,7 +245,7 @@ const ProductoSimilarSelect = ({
                 onClick={() => removeSelection(id)}
                 className="ml-1 hover:text-destructive"
               >
-                <X className="h-3 w-3" />
+                <X className="h-2.5 w-2.5" />
               </button>
             </Badge>
           ))}
@@ -340,13 +339,11 @@ export function FormularioProductos({
     categorias: [],
   });
 
-  // Estados para controlar la carga de los botones
   const [isSubmittingProduct, setIsSubmittingProduct] = useState(false);
   const [isAddingElement, setIsAddingElement] = useState(false);
 
   const { toast } = useToast();
 
-  // Cargar todos los productos para el selector de similares
   useEffect(() => {
     const loadTodosProductos = async () => {
       setLoadingProductos(true);
@@ -362,7 +359,6 @@ export function FormularioProductos({
     loadTodosProductos();
   }, []);
 
-  // Cargar los elementos de gestión al montar el componente
   useEffect(() => {
     const loadManagementItems = async () => {
       try {
@@ -376,7 +372,6 @@ export function FormularioProductos({
           categorias: categoriasData,
         });
 
-        // Actualizar las listas locales con los datos frescos del backend
         setLocalLists({
           ubicaciones: ubicacionesData.map((item) => item.nombre),
           categorias: categoriasData.map((item) => item.nombre),
@@ -389,7 +384,6 @@ export function FormularioProductos({
     loadManagementItems();
   }, []);
 
-  // Actualizar las listas locales cuando cambien las props
   useEffect(() => {
     setLocalLists({
       ubicaciones: ubicaciones,
@@ -404,16 +398,13 @@ export function FormularioProductos({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Función MEJORADA para formatear la descripción que funciona en producción
   const formatDescriptionForProduction = (description: string): string => {
     if (!description) return "";
-
-    // Para producción: normalizar todos los tipos de saltos de línea
     return description
-      .replace(/\r\n/g, "\n") // Windows a Unix
-      .replace(/\r/g, "\n") // Mac antiguo a Unix
-      .replace(/\n+/g, "\n") // Múltiples saltos a uno solo
-      .replace(/[ ]+/g, " ") // Múltiples espacios a uno solo
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\n+/g, "\n")
+      .replace(/[ ]+/g, " ")
       .trim();
   };
 
@@ -599,7 +590,7 @@ export function FormularioProductos({
   };
 
   const handleAddNewElement = async (name: string) => {
-    if (isAddingElement) return; // Prevenir doble clic
+    if (isAddingElement) return;
 
     const type = addDialogState.type;
     if (!type) return;
@@ -616,7 +607,6 @@ export function FormularioProductos({
           break;
       }
 
-      // Actualizar la lista específica desde el backend
       await updateLocalList(type);
 
       toast({
@@ -685,47 +675,96 @@ export function FormularioProductos({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="nombre">
-              Nombre <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="nombre"
-              value={formData.nombre}
-              onChange={(e) => handleInputChange("nombre", e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="ubicacion">
-              Ubicación <span className="text-red-500">*</span>
-            </Label>
-            <div className="flex gap-2">
-              <select
-                value={formData.ubicacion}
-                onChange={(e) => handleInputChange("ubicacion", e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                required
+      <form onSubmit={handleSubmit} className="w-full space-y-2">
+        {/* Nombre del producto */}
+        <div className="space-y-1">
+          <Label htmlFor="nombre" className="text-xs font-medium">
+            Nombre <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="nombre"
+            value={formData.nombre}
+            onChange={(e) => handleInputChange("nombre", e.target.value)}
+            placeholder="Ej: Laptop HP Pavilion"
+            className="h-8 text-xs"
+            required
+          />
+        </div>
+
+        {/* Imagen circular centrada - TODO EL CÍRCULO ES CLICKEABLE */}
+        <div className="flex justify-center py-1">
+          <div className="relative">
+            <div
+              className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              onClick={() =>
+                document.getElementById("image-upload-input")?.click()
+              }
+            >
+              {formData.imagen ? (
+                <img
+                  src={formData.imagen}
+                  className="w-full h-full object-cover"
+                  alt="Producto"
+                />
+              ) : (
+                <Camera className="w-7 h-7 text-gray-400" />
+              )}
+            </div>
+            <label className="absolute bottom-0 right-0 p-1 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
+              <Camera className="w-3 h-3 text-white" />
+              <input
+                id="image-upload-input"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
+            {formData.imagen && (
+              <button
+                type="button"
+                onClick={removeImage}
+                className="absolute -top-2 -right-2 p-0.5 bg-destructive rounded-full hover:bg-destructive/90 transition-colors"
               >
-                <option value="">Seleccionar ubicación</option>
-                {localLists.ubicaciones.map((ubicacion) => (
-                  <option key={ubicacion} value={ubicacion}>
-                    {ubicacion}
-                  </option>
-                ))}
-              </select>
+                <X className="w-2.5 h-2.5 text-white" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Descripción - más baja */}
+        <div className="space-y-1">
+          <Label htmlFor="descripcion" className="text-xs font-medium">
+            Descripción <span className="text-red-500">*</span>
+          </Label>
+          <Textarea
+            id="descripcion"
+            value={formData.descripcion}
+            onChange={(e) => handleInputChange("descripcion", e.target.value)}
+            rows={2}
+            placeholder="Describe tu producto..."
+            className="text-xs resize-none h-12"
+            required
+          />
+        </div>
+
+        {/* Ubicación y Categorías lado a lado */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ubicacion" className="text-xs font-medium">
+                Ubicación <span className="text-red-500">*</span>
+              </Label>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="flex-shrink-0"
+                    className="h-6 w-6 p-0"
                     disabled={isAddingElement}
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3 w-3" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -747,67 +786,137 @@ export function FormularioProductos({
                 </AlertDialogContent>
               </AlertDialog>
             </div>
+            <select
+              value={formData.ubicacion}
+              onChange={(e) => handleInputChange("ubicacion", e.target.value)}
+              className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs"
+              required
+            >
+              <option value="">Seleccionar</option>
+              {localLists.ubicaciones.map((ubicacion) => (
+                <option key={ubicacion} value={ubicacion}>
+                  {ubicacion}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium">
+                Categorías <span className="text-red-500">*</span>
+              </Label>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => openAddDialog("categoria")}
+                className="h-6 w-6 p-0"
+                disabled={isAddingElement}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
+            <SearchSelect
+              options={localLists.categorias}
+              selectedValues={formData.categorias}
+              onSelectionChange={(values) =>
+                handleInputChange("categorias", values)
+              }
+              placeholder="Buscar categorías..."
+              label=""
+            />
+          </div>
+        </div>
+
+        {/* Precio Venta y Precio Compra */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label htmlFor="precioVenta" className="text-xs font-medium">
+              Precio Venta (Bs) <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="precioVenta"
+              type="number"
+              step="0.01"
+              value={formData.precioVenta}
+              onChange={(e) => handleInputChange("precioVenta", e.target.value)}
+              className="h-8 text-xs number-input-no-scroll"
+              onWheel={(e) => e.currentTarget.blur()}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="precioCompra" className="text-xs font-medium">
+              Precio Compra (Bs)
+            </Label>
+            <Input
+              id="precioCompra"
+              type="number"
+              step="0.01"
+              value={formData.precioCompra}
+              onChange={(e) =>
+                handleInputChange("precioCompra", e.target.value)
+              }
+              className="h-8 text-xs number-input-no-scroll"
+              onWheel={(e) => e.currentTarget.blur()}
+            />
+          </div>
+        </div>
+
+        {/* Stock y Stock Mínimo */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">
+              Stock <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="number"
+              value={formData.stock}
+              onChange={(e) =>
+                handleInputChange("stock", parseInt(e.target.value) || 0)
+              }
+              placeholder="0"
+              min="0"
+              className="h-8 text-xs number-input-no-scroll"
+              onWheel={(e) => e.currentTarget.blur()}
+              required
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Stock Mínimo</Label>
+            <Input
+              type="number"
+              value={formData.stockMinimo}
+              onChange={(e) =>
+                handleInputChange("stockMinimo", parseInt(e.target.value) || 0)
+              }
+              placeholder="0"
+              min="0"
+              className="h-8 text-xs number-input-no-scroll"
+              onWheel={(e) => e.currentTarget.blur()}
+            />
           </div>
         </div>
 
         {/* Código de Barras */}
-        <div className="space-y-2">
-          <Label htmlFor="codigoBarras">Código de Barras</Label>
+        <div className="space-y-1">
+          <Label htmlFor="codigoBarras" className="text-xs font-medium">
+            Código de Barras
+          </Label>
           <Input
             id="codigoBarras"
             value={formData.codigoBarras || ""}
             onChange={(e) => handleInputChange("codigoBarras", e.target.value)}
-            placeholder="Opcional - Código de barras del producto"
+            placeholder="Opcional"
+            className="h-8 text-xs"
           />
-        </div>
-
-        {/* Categorías */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>
-              Categorías <span className="text-red-500">*</span>
-            </Label>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => openAddDialog("categoria")}
-              disabled={isAddingElement}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <SearchSelect
-            options={localLists.categorias}
-            selectedValues={formData.categorias}
-            onSelectionChange={(values) =>
-              handleInputChange("categorias", values)
-            }
-            placeholder="Buscar categorías..."
-            label=""
-          />
-        </div>
-
-        {/* Descripción */}
-        <div className="space-y-2">
-          <Label htmlFor="descripcion">
-            Descripción <span className="text-red-500">*</span>
-          </Label>
-          <Textarea
-            id="descripcion"
-            value={formData.descripcion}
-            onChange={(e) => handleInputChange("descripcion", e.target.value)}
-            rows={3}
-            placeholder="Escribe la descripción del producto. Puedes usar saltos de línea para mejor formato."
-            required
-          />
-          <div className="text-xs text-muted-foreground">
-            Los saltos de línea se mantendrán en la visualización del producto.
-          </div>
         </div>
 
         {/* Productos Similares */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <ProductoSimilarSelect
             productosDisponibles={todosProductos}
             selectedValues={formData.productosSimilares || []}
@@ -823,104 +932,13 @@ export function FormularioProductos({
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="precioVenta">
-              Precio Venta (Bs) <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="precioVenta"
-              type="number"
-              step="0.01"
-              value={formData.precioVenta}
-              onChange={(e) => handleInputChange("precioVenta", e.target.value)}
-              className="number-input-no-scroll"
-              onWheel={(e) => e.currentTarget.blur()}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="precioCompra">Precio Compra (Bs)</Label>
-            <Input
-              id="precioCompra"
-              type="number"
-              step="0.01"
-              value={formData.precioCompra}
-              onChange={(e) =>
-                handleInputChange("precioCompra", e.target.value)
-              }
-              className="number-input-no-scroll"
-              onWheel={(e) => e.currentTarget.blur()}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>
-              Stock <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              type="number"
-              value={formData.stock}
-              onChange={(e) =>
-                handleInputChange("stock", parseInt(e.target.value) || 0)
-              }
-              placeholder="0"
-              min="0"
-              className="number-input-no-scroll"
-              onWheel={(e) => e.currentTarget.blur()}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Stock Mínimo</Label>
-            <Input
-              type="number"
-              value={formData.stockMinimo}
-              onChange={(e) =>
-                handleInputChange("stockMinimo", parseInt(e.target.value) || 0)
-              }
-              placeholder="0"
-              min="0"
-              className="number-input-no-scroll"
-              onWheel={(e) => e.currentTarget.blur()}
-            />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label>Imagen del producto</Label>
-            <Input type="file" accept="image/*" onChange={handleImageUpload} />
-            <div className="text-xs text-muted-foreground">
-              {formData.imagen &&
-                `Imagen existente. Agregar nueva imagen reemplazará la existente.`}
-            </div>
-          </div>
-        </div>
-
-        {formData.imagen && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            <div className="relative">
-              <img
-                src={formData.imagen}
-                className="w-full h-20 object-cover rounded border-2 border-green-500"
-                alt="Vista previa"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                onClick={removeImage}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
+        {/* Botones */}
+        <div className="flex justify-end space-x-2 pt-2">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
-            className="w-full sm:w-auto"
+            className="h-8 text-xs"
             disabled={isSubmittingProduct || isAddingElement}
           >
             Cancelar
@@ -929,18 +947,18 @@ export function FormularioProductos({
             <AlertDialogTrigger asChild>
               <Button
                 type="button"
-                className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
+                className="bg-primary hover:bg-primary/90 h-8 text-xs"
                 disabled={isSubmittingProduct || isAddingElement}
               >
                 {isSubmittingProduct ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5"></div>
                     {product ? "Actualizando..." : "Agregando..."}
                   </>
                 ) : product ? (
-                  "Actualizar Producto"
+                  "Actualizar"
                 ) : (
-                  "Agregar Producto"
+                  "Agregar"
                 )}
               </Button>
             </AlertDialogTrigger>
@@ -949,8 +967,8 @@ export function FormularioProductos({
                 <AlertDialogTitle>Confirmar Acción</AlertDialogTitle>
                 <AlertDialogDescription>
                   {product
-                    ? `¿Estás seguro de actualizar el producto "${formData.nombre}"?`
-                    : `¿Estás seguro de agregar el producto "${formData.nombre}"?`}
+                    ? `¿Estás seguro de actualizar "${formData.nombre}"?`
+                    : `¿Estás seguro de agregar "${formData.nombre}"?`}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -961,14 +979,7 @@ export function FormularioProductos({
                   onClick={handleSubmit}
                   disabled={isSubmittingProduct}
                 >
-                  {isSubmittingProduct ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Procesando...
-                    </>
-                  ) : (
-                    "Confirmar"
-                  )}
+                  {isSubmittingProduct ? "Procesando..." : "Confirmar"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -976,7 +987,6 @@ export function FormularioProductos({
         </div>
       </form>
 
-      {/* Diálogo para agregar nuevos elementos */}
       <AddItemDialog
         open={addDialogState.open}
         onOpenChange={(open) => setAddDialogState({ open, type: null })}
