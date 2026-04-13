@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Product } from "./ProductCard";
+import { Product } from "@/api/HomeApi";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -104,7 +104,7 @@ export function ShoppingCart({
                         {/* Product Image */}
                         <div className="relative w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                           <img
-                            src={item.images[0]}
+                            src={item.image[0]}
                             alt={item.name}
                             className="w-full h-full object-cover"
                           />

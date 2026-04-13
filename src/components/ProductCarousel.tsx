@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProductCard, Product } from "@/components/ProductCard";
+import { ProductCard } from "@/components/ProductCard";
 import { cn } from "@/lib/utils";
+import { Product } from "@/api/HomeApi";
 
 interface ProductCarouselProps {
   products: Product[];
@@ -123,11 +124,7 @@ export function ProductCarousel({ products, title, variant = "default", onAddToC
               <div
                 key={product.id}
                 className={cn(
-                  "flex-none",
-                  // Tamaños responsivos para mantener proporción 512x512
-                  "w-[280px] h-[480px]", // Móvil: tamaño fijo
-                  "md:w-[320px] md:h-[520px]", // Tablet: tamaño fijo
-                  "lg:w-[350px] lg:h-[730px]" // Desktop: tamaño fijo
+                  "flex-none"
                 )}
               >
                 <ProductCard

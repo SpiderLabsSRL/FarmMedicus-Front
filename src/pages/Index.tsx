@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { Header } from "@/components/Header";
 import { FloatingCartButton } from "@/components/FloatingCartButton";
 import { HeroSection } from "@/components/HeroSection";
-import { ProductCard, Product } from "@/components/ProductCard";
+import { ProductCard } from "@/components/ProductCard";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { ProductFilters, FilterOptions } from "@/components/ProductFilters";
 import { ShoppingCart, CartItem } from "@/components/ShoppingCart";
@@ -16,11 +16,9 @@ import {
   getProducts, 
   searchProducts, 
   getProductCategories, 
-  getProductColors, 
-  getProductSizes, 
-  getProductTypes, 
   getCarruseles,
-  Carrusel
+  Carrusel,
+  Product
 } from "@/api/HomeApi";
 
 // SVG del logo oficial de TikTok
@@ -49,10 +47,7 @@ const Index = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<FilterOptions>({
-    category: "all",
-    color: "all",
-    size: "all",
-    type: "all",
+    category: "all"
   });
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -82,25 +77,16 @@ const Index = () => {
         const [
           productsData,
           categoriesData,
-          colorsData,
-          sizesData,
-          typesData,
           carruselesData
         ] = await Promise.all([
           getProducts(),
           getProductCategories(),
-          getProductColors(),
-          getProductSizes(),
-          getProductTypes(),
           getCarruseles()
         ]);
 
         setAllProducts(productsData);
         setFilteredProducts(productsData);
         setCategories(categoriesData);
-        setColors(colorsData);
-        setSizes(sizesData);
-        setTypes(typesData);
         setCarruseles(carruselesData);
       } catch (error) {
         console.error("Error loading initial data:", error);
@@ -197,10 +183,7 @@ const Index = () => {
   const hasActiveFilters = useMemo(() => {
     return (
       searchQuery !== "" ||
-      filters.category !== "all" ||
-      filters.color !== "all" ||
-      filters.size !== "all" ||
-      filters.type !== "all"
+      filters.category !== "all"
     );
   }, [searchQuery, filters]);
 
@@ -314,7 +297,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-8 md:mb-12 animate-fade-in-up">
             <h2 className="text-3xl md:text-4xl font-black text-primary mb-4">
-              Nuestros Productos LED
+              Nuestros Productos
             </h2>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Encuentra la iluminación perfecta para cada espacio con nuestra amplia gama de productos LED
@@ -326,9 +309,6 @@ const Index = () => {
             <ProductFilters
               onFiltersChange={setFilters}
               categories={categories}
-              colors={colors}
-              sizes={sizes}
-              types={types}
             />
           </div>
 
@@ -368,7 +348,7 @@ const Index = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
                   {filteredProducts.map((product) => (
                     <ProductCard
-                      key={`${product.id}-${product.color || 'default'}`}
+                      key={`${product.id} || 'default'}`}
                       product={product}
                       onAddToCart={handleAddToCart}
                       onViewDetails={handleViewDetails}
@@ -420,7 +400,7 @@ const Index = () => {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
                     {filteredProducts.map((product) => (
                       <ProductCard
-                        key={`${product.id}-${product.color || 'default'}`}
+                        key={`${product.id} || 'default'}`}
                         product={product}
                         onAddToCart={handleAddToCart}
                         onViewDetails={handleViewDetails}

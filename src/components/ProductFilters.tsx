@@ -10,27 +10,18 @@ import { Separator } from "@/components/ui/separator";
 
 export interface FilterOptions {
   category: string;
-  color: string;
-  size: string;
-  type: string;
 }
 
 interface ProductFiltersProps {
   onFiltersChange: (filters: FilterOptions) => void;
   categories: string[];
-  colors: string[];
-  sizes: string[];
-  types: string[];
 }
 
 const DEFAULT_FILTERS: FilterOptions = {
-  category: "all",
-  color: "all", 
-  size: "all",
-  type: "all",
+  category: "all"
 };
 
-export function ProductFilters({ onFiltersChange, categories, colors, sizes, types }: ProductFiltersProps) {
+export function ProductFilters({ onFiltersChange, categories }: ProductFiltersProps) {
   const [filters, setFilters] = useState<FilterOptions>(DEFAULT_FILTERS);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -47,19 +38,13 @@ export function ProductFilters({ onFiltersChange, categories, colors, sizes, typ
 
 const hasActiveFilters = () => {
   return (
-    filters.category !== "all" ||
-    filters.color !== "all" ||
-    filters.size !== "all" ||
-    filters.type !== "all"
+    filters.category !== "all"
   );
 };
 
 const getActiveFiltersCount = () => {
   let count = 0;
   if (filters.category !== "all") count++;
-  if (filters.color !== "all") count++;
-  if (filters.size !== "all") count++;
-  if (filters.type !== "all") count++;
   return count;
 };
 
@@ -119,27 +104,6 @@ const getActiveFiltersCount = () => {
           </Select>
         </div>
 
-        <Separator />
-
-        {/* Tipo */}
-        <div className="space-y-2">
-          <Label className="text-sm font-bold text-foreground">Tipo</Label>
-          <Select value={filters.type} onValueChange={(value) => updateFilters({ type: value })}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Todos los tipos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los tipos</SelectItem>
-              {types.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-
         {/* Active Filters */}
         {hasActiveFilters() && (
           <>
@@ -155,45 +119,6 @@ const getActiveFiltersCount = () => {
                       size="sm"
                       className="h-auto p-0 text-secondary-foreground hover:text-destructive"
                       onClick={() => updateFilters({ category: "all" })}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
-                {filters.color !== "all" && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    {filters.color}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 text-secondary-foreground hover:text-destructive"
-                      onClick={() => updateFilters({ color: "all" })}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
-                {filters.size !== "all" && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    {filters.size}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 text-secondary-foreground hover:text-destructive"
-                      onClick={() => updateFilters({ size: "all" })}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                )}
-                {filters.type !== "all" && (
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    {filters.type}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 text-secondary-foreground hover:text-destructive"
-                      onClick={() => updateFilters({ type: "all" })}
                     >
                       <X className="h-3 w-3" />
                     </Button>
