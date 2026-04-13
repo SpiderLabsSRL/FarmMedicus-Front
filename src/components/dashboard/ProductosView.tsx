@@ -53,6 +53,7 @@ import {
   Producto,
   updateStockProducto,
 } from "@/api/ProductsApi";
+import { getImageUrl } from "./VenderView";
 
 interface StockFormData {
   stockActual: number;
@@ -425,10 +426,6 @@ export function ProductosView() {
     return producto.stock || 0;
   };
 
-  const getProductImage = useCallback((product: Producto): string[] => {
-    return product.imagen ? [product.imagen] : [];
-  }, []);
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -603,7 +600,6 @@ export function ProductosView() {
                     <div className="block xl:hidden space-y-3 w-full">
                       {products.map((product) => {
                         const totalStock = getTotalStock(product);
-                        const allImages = getProductImage(product);
 
                         return (
                           <Card key={product.idproducto} className="p-3 w-full">
@@ -611,7 +607,7 @@ export function ProductosView() {
                               <div className="flex items-start gap-3 w-full">
                                 <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20">
                                   <ImageCarousel
-                                    images={allImages}
+                                    images={[getImageUrl(product.imagen)]}
                                     productName={product.nombre}
                                     className="w-16 h-16 sm:w-20 sm:h-20"
                                   />
@@ -816,14 +812,12 @@ export function ProductosView() {
                             </TableHeader>
                             <TableBody>
                               {products.map((product) => {
-                                const allImages = getProductImage(product);
-
                                 return (
                                   <TableRow key={product.idproducto}>
                                     <TableCell>
                                       <div className="w-10 h-10">
                                         <ImageCarousel
-                                          images={allImages}
+                                          images={[getImageUrl(product.imagen)]}
                                           productName={product.nombre}
                                           className="w-10 h-10"
                                         />

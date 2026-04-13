@@ -150,7 +150,7 @@ const buildProductFromAvailableData = async (
     
     let image: string = '';
     if (productoBasico) {
-      image = `data:image/jpeg;base64,${productoBasico.imagen}`;
+      image = productoBasico.imagen;
     }
         
     // Calcular valores

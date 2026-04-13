@@ -6,6 +6,7 @@ import { getLowStockAlerts, Alert } from "@/api/AlertsApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package, ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageCarousel } from "./ProductosView";
+import { getImageUrl } from "./VenderView";
 
 export function AlertasView() {
   const [productosStockBajo, setProductosStockBajo] = useState<Alert[]>([]);
@@ -116,7 +117,7 @@ export function AlertasView() {
                           <div className="md:hidden text-xs font-medium text-muted-foreground mb-2">IMAGEN</div>
                           <div className="w-20 h-20 md:w-20 md:h-20 mx-auto md:mx-0">
                             <ImageCarousel
-                              images={[producto.imagen]}
+                              images={[getImageUrl(producto.imagen)]}
                               productName={producto.producto}
                               className="w-20 h-20 md:w-20 md:h-20"
                             />

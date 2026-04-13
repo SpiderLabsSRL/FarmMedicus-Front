@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Edit2, Trash2, Search, ShoppingBag, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getCarruseles, getAllProducts, createCarrusel, updateCarrusel, deleteCarrusel, searchProducts, getSelectedProductsInfo, Carrusel, Product } from "@/api/EcommerceViewApi";
+import { getImageUrl } from "./VenderView";
 
 // Hook para debounce
 function useDebounce<T>(value: T, delay: number): T {
@@ -432,7 +433,7 @@ export function EcommerceView() {
                 <TableRow key={product.id}>
                   <TableCell>
                     <img 
-                      src={product?.image || "https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png"} 
+                      src={getImageUrl(product.image)} 
                       alt={product.name}
                       className="w-8 h-8 md:w-10 md:h-10 object-cover rounded-md"
                       onError={(e) => {
@@ -514,7 +515,7 @@ export function EcommerceView() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 md:gap-4">
                         <img 
-                          src={product?.image || "https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png"} 
+                          src={getImageUrl(product.image)} 
                           alt={product.name}
                           className="w-8 h-8 md:w-12 md:h-12 object-cover rounded-md flex-shrink-0"
                           onError={(e) => {

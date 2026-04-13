@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Product } from "@/api/HomeApi";
+import { getImageUrl } from "./dashboard/VenderView";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -104,7 +105,7 @@ export function ShoppingCart({
                         {/* Product Image */}
                         <div className="relative w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                           <img
-                            src={item.image[0]}
+                            src={getImageUrl(item.image)}
                             alt={item.name}
                             className="w-full h-full object-cover"
                           />

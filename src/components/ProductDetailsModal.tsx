@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Product } from "@/api/HomeApi";
+import { getImageUrl } from "./dashboard/VenderView";
 
 interface ProductDetailsModalProps {
   product: Product | null;
@@ -29,8 +30,6 @@ export function ProductDetailsModal({ product, isOpen, onClose, onAddToCart }: P
 
   if (!product) return null;
 
-  const images = product?.image ? [product.image] : ['https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png'];
-
   const formatDescriptionForProduction = (description: string): string => {
     if (!description) return "Sin descripción";
     
@@ -40,18 +39,6 @@ export function ProductDetailsModal({ product, isOpen, onClose, onAddToCart }: P
       .replace(/\n+/g, '\n')   // Múltiples saltos a uno solo
       .trim();
     return normalizedDescription;
-  };
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === images.length - 1 ? 0 : prev + 1
-    );
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => 
-      prev === 0 ? images.length - 1 : prev - 1
-    );
   };
 
   const toggleZoom = () => {
@@ -110,7 +97,7 @@ export function ProductDetailsModal({ product, isOpen, onClose, onAddToCart }: P
             {/* Main Image */}
             <div className="relative w-full bg-muted/30 rounded-lg overflow-hidden h-80 md:h-96 lg:aspect-square lg:h-auto">
               <img
-                src={images[currentImageIndex] || 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png'}
+                src={getImageUrl(product.image)}
                 alt={`${product.name} - imagen ${currentImageIndex + 1}`}
                 className={`absolute inset-0 w-full h-full object-cover object-center transition-transform duration-300 ${
                   isZoomed ? 'scale-150 cursor-grab' : 'cursor-zoom-in'
@@ -118,28 +105,6 @@ export function ProductDetailsModal({ product, isOpen, onClose, onAddToCart }: P
                 onClick={toggleZoom}
                 draggable={false}
               />
-              
-              {/* Navigation arrows */}
-              {images.length > 1 && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={prevImage}
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white hover:bg-black/70 h-10 w-10 p-0 rounded-full"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={nextImage}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white hover:bg-black/70 h-10 w-10 p-0 rounded-full"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </>
-              )}
 
               {/* Zoom button */}
               <Button
@@ -150,33 +115,8 @@ export function ProductDetailsModal({ product, isOpen, onClose, onAddToCart }: P
               >
                 {isZoomed ? <ZoomOut className="h-5 w-5" /> : <ZoomIn className="h-5 w-5" />}
               </Button>
-
-              {/* Image indicators */}
-              {images.length > 1 && (
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                    <button
-                      onClick={() => setCurrentImageIndex(0)}
-                      className={`w-3 h-3 rounded-full transition-colors duration-300 bg-secondary`}
-                    />
-                </div>
-              )}
             </div>
 
-            {/* Image Thumbnails - Hidden on mobile */}
-            {images.length > 1 && (
-              <div className="hidden md:grid grid-cols-4 gap-2">
-                  <button
-                    onClick={() => setCurrentImageIndex(0)}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all duration-300 border-primary ring-2 ring-primary/50`}
-                  >
-                    <img
-                      src={product.image || 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png'}
-                      alt={`${product.name}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-              </div>
-            )}
           </div>
 
           {/* Product Information */}

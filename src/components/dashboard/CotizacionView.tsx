@@ -14,6 +14,7 @@ import { downloadCotizacionAsPDF } from "./cotizacionPdfUtils";
 import { createCotizacion, getCotizacionById, deleteCotizacion, searchCotizaciones, CotizacionRequest } from "@/api/CotizacionApi";
 import { Product, searchProducts } from "@/api/SalesApi";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getImageUrl } from "./VenderView";
 
 const WhatsappIcon = ({ className = "w-4 h-4" }) => (
   <svg
@@ -1177,7 +1178,7 @@ export function CotizacionView() {
                         <div className="flex items-start gap-3 flex-1">
                           {product.imagen ? (
                             <img
-                              src={`data:image/jpeg;base64,${product.imagen}`}
+                              src={getImageUrl(product.imagen)}
                               alt={product.nombre}
                               className="w-16 h-16 rounded-md object-cover"
                             />

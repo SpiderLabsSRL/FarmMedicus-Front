@@ -59,6 +59,57 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+export const getImageUrl = (imagen: any): string | null => {
+  if (!imagen) return 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png';
+
+  if (typeof imagen === "string") {
+    if (imagen.startsWith("http") || imagen.startsWith("data:image")) {
+      return imagen;
+    }
+    if (imagen.length > 0 && !imagen.includes("object")) {
+      return `data:image/jpeg;base64,${imagen}`;
+    }
+    return 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png';
+  }
+
+  if (imagen && imagen.data && Array.isArray(imagen.data)) {
+    try {
+      const uint8Array = new Uint8Array(imagen.data);
+      let binary = "";
+      for (let i = 0; i < uint8Array.length; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64 = btoa(binary);
+      return `data:image/jpeg;base64,${base64}`;
+    } catch (e) {
+      console.error("Error converting image buffer:", e);
+      return 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png';
+    }
+  }
+
+  if (
+    imagen &&
+    typeof imagen === "object" &&
+    imagen.type === "Buffer" &&
+    Array.isArray(imagen.data)
+  ) {
+    try {
+      const uint8Array = new Uint8Array(imagen.data);
+      let binary = "";
+      for (let i = 0; i < uint8Array.length; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64 = btoa(binary);
+      return `data:image/jpeg;base64,${base64}`;
+    } catch (e) {
+      console.error("Error converting Buffer:", e);
+      return 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png';
+    }
+  }
+
+  return 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png';
+};
+
 export function VenderView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -343,57 +394,6 @@ export function VenderView() {
       title: "Producto agregado",
       description: `${product.nombre} agregado a la venta`,
     });
-  };
-
-  const getImageUrl = (imagen: any): string | null => {
-    if (!imagen) return null;
-
-    if (typeof imagen === "string") {
-      if (imagen.startsWith("http") || imagen.startsWith("data:image")) {
-        return imagen;
-      }
-      if (imagen.length > 0 && !imagen.includes("object")) {
-        return `data:image/jpeg;base64,${imagen}`;
-      }
-      return null;
-    }
-
-    if (imagen && imagen.data && Array.isArray(imagen.data)) {
-      try {
-        const uint8Array = new Uint8Array(imagen.data);
-        let binary = "";
-        for (let i = 0; i < uint8Array.length; i++) {
-          binary += String.fromCharCode(uint8Array[i]);
-        }
-        const base64 = btoa(binary);
-        return `data:image/jpeg;base64,${base64}`;
-      } catch (e) {
-        console.error("Error converting image buffer:", e);
-        return null;
-      }
-    }
-
-    if (
-      imagen &&
-      typeof imagen === "object" &&
-      imagen.type === "Buffer" &&
-      Array.isArray(imagen.data)
-    ) {
-      try {
-        const uint8Array = new Uint8Array(imagen.data);
-        let binary = "";
-        for (let i = 0; i < uint8Array.length; i++) {
-          binary += String.fromCharCode(uint8Array[i]);
-        }
-        const base64 = btoa(binary);
-        return `data:image/jpeg;base64,${base64}`;
-      } catch (e) {
-        console.error("Error converting Buffer:", e);
-        return null;
-      }
-    }
-
-    return null;
   };
 
   const actualizarCantidad = (index: number, nuevaCantidad: number) => {

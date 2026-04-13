@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Product } from "@/api/HomeApi";
+import { getImageUrl } from "./dashboard/VenderView";
 
 interface ProductCardProps {
   product: Product;
@@ -30,31 +31,6 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
       .trim();
   };
 
-  // Función para obtener imágenes con tamaño fijo de 512x512
-  const getResizedImageUrl = (imageUrl: string): string => {
-    if (!imageUrl || imageUrl === 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png') {
-      return 'https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png';
-    }
-    
-    // Si es una imagen base64, retornar tal cual
-    if (imageUrl.toString().startsWith('data:image')) {
-      return imageUrl;
-    }
-    
-    // Si es una URL externa, puedes agregar parámetros de resizing si tu backend lo soporta
-    // Por ejemplo, si usas un servicio de imágenes como Cloudinary o similar
-    // return `${imageUrl}?width=512&height=512&fit=crop`;
-    
-    // Por ahora, retornar la imagen original
-    return imageUrl;
-  };
-  
-  // Obtener imágenes de la variante actual con tamaño fijo
-  const currentImage = product.image 
-    ? getResizedImageUrl(product.image)
-    : 
-    ['https://static.vecteezy.com/system/resources/previews/011/781/801/non_2x/medicine-3d-render-icon-illustration-png.png'];
-
   const getStockStatus = () => {
     const stock = product.stock;
     if (stock === 0) {
@@ -77,7 +53,7 @@ export function ProductCard({ product, onAddToCart, onViewDetails }: ProductCard
           {/* Image Carousel con tamaño fijo */}
           <div className="w-full h-full flex items-center justify-center bg-muted/30">
             <img
-              src={currentImage[currentImageIndex]}
+              src={getImageUrl(product.image)}
               alt={`${product.name} - imagen ${currentImageIndex + 1}`}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               style={{
