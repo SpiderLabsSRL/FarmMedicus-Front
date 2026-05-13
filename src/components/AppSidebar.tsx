@@ -202,7 +202,7 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
 
       <SidebarFooter className="p-4 flex-shrink-0">
         <Button
-          variant="outline"
+          variant="secondary"
           size={collapsed ? "sm" : "default"}
           onClick={handleLogout}
           className="w-full"

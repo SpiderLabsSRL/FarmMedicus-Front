@@ -669,7 +669,7 @@ export function VenderView() {
               ¡Bienvenido, {username}!
             </h2>
             <p className="text-muted-foreground">
-              Sistema de punto de venta NEOLED
+              Sistema de Farmacia LUMYRA
             </p>
           </div>
           <div className="text-right">

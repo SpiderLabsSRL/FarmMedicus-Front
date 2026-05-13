@@ -219,7 +219,7 @@ const Sidebar = React.forwardRef<
           >
             {/* SheetTitle oculto visualmente pero accesible para lectores de pantalla */}
             <SheetHeader className="sr-only">
-              <SheetTitle>Menú de navegación NEOLED</SheetTitle>
+              <SheetTitle>Menú de navegación LUMYRA</SheetTitle>
             </SheetHeader>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
